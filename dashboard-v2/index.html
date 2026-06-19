@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban — dashboard-v2</title>
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+<div id="app">
+
+  <!-- ─── Header ─── -->
+  <header class="board-header">
+    <div class="header-left">
+      <h1>Kanban</h1>
+      <button class="btn btn-ghost" id="addTaskBtn" aria-label="Ajouter une tâche">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="label">Ajouter</span>
+      </button>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Basculer le thème">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── Board ─── -->
+  <main class="board" id="board"></main>
+
+  <!-- ─── Footer ─── -->
+  <div class="footer-bar" id="footerBar">
+    <button class="footer-toggle" id="footerToggle" aria-label="Basculer la liste des tâches">
+      <svg class="toggle-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Toutes les tâches
+      <span id="footerTaskCount" style="color:var(--text-tertiary);font-weight:400;"></span>
+    </button>
+    <div class="footer-panel">
+      <div class="footer-scroll" id="footerScroll"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── Trash FAB ─── -->
+<button class="fab" id="fab" aria-label="Corbeille">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline class="trash-lid" points="3,6 5,6 21,6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+  </svg>
+</button>
+
+<!-- ─── Add Task Modal ─── -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal" role="dialog" aria-label="Ajouter une tâche">
+    <div class="modal-header">
+      <h2>Nouvelle tâche</h2>
+      <button class="btn-close" id="addModalClose" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="taskTitle">Titre</label>
+        <input type="text" id="taskTitle" placeholder="Que faut-il faire ?" required>
+      </div>
+      <div class="form-group">
+        <label for="taskPriority">Priorité</label>
+        <select id="taskPriority">
+          <option value="low">Basse</option>
+          <option value="medium" selected>Moyenne</option>
+          <option value="high">Haute</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="taskAssign">Assigné à</label>
+        <select id="taskAssign" multiple></select>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="addModalCancel">Annuler</button>
+        <button class="btn btn-primary" id="addModalSave">Ajouter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Trash Modal ─── -->
+<div class="modal-overlay" id="trashModal">
+  <div class="modal" role="dialog" aria-label="Corbeille">
+    <div class="modal-header">
+      <h2>Corbeille</h2>
+      <button class="btn-close" id="trashModalClose" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="trashList"></div>
+      <button class="btn btn-danger btn-sm" id="trashCleanAll" style="margin-top:12px;">Vider la corbeille</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Hero Modal ─── -->
+<div class="hero-overlay" id="heroOverlay">
+  <div class="hero-modal" role="dialog" aria-label="Détails de la tâche">
+    <div class="hero-cover" id="heroCover"></div>
+    <div class="hero-body" id="heroBody"></div>
+  </div>
+  <button class="hero-close" id="heroClose" aria-label="Fermer">&times;</button>
+</div>
+
+<script>
+// ─── Data ───
+const USERS = [
+  { id: 'u1', name: 'Alice', color: '#6366f1' },
+  { id: 'u2', name: 'Bob', color: '#22c55e' },
+  { id: 'u3', name: 'Charlie', color: '#f59e0b' },
+  { id: 'u4', name: 'Diana', color: '#ef4444' },
+];
+
+let TASKS = [
+  { id: 't1', title: 'Concevoir le dashboard analytics', priority: 'high', status: 'todo', assigned: ['u1'] },
+  { id: 't2', title: 'Implémenter le drag & drop', priority: 'high', status: 'done', assigned: ['u2', 'u3'] },
+  { id: 't3', title: 'Ajouter le mode sombre', priority: 'medium', status: 'done', assigned: ['u1'] },
+  { id: 't4', title: 'Écrire les tests unitaires', priority: 'medium', status: 'todo', assigned: ['u4'] },
+  { id: 't5', title: 'Configurer le CI/CD', priority: 'low', status: 'in-progress', assigned: ['u2'] },
+  { id: 't6', title: 'Optimiser les images', priority: 'low', status: 'todo', assigned: [] },
+  { id: 't7', title: 'Corriger le bug de défilement', priority: 'high', status: 'in-progress', assigned: ['u3', 'u4'] },
+  { id: 't8', title: 'Mettre à jour la documentation', priority: 'medium', status: 'todo', assigned: ['u1'] },
+  { id: 't9', title: 'Refonte de la page de connexion', priority: 'low', status: 'done', assigned: ['u2'] },
+  { id: 't10', title: 'Ajouter les notifications push', priority: 'medium', status: 'in-progress', assigned: ['u4'] },
+  { id: 't11', title: 'Audit de performance Lighthouse', priority: 'high', status: 'todo', assigned: ['u1', 'u2', 'u3'] },
+];
+let TRASH = [];
+let nextId = 12;
+
+// ─── Render Board ───
+function render() {
+  renderBoard();
+  renderFooter();
+  renderTrashList();
+}
+
+const COLUMNS = [
+  { id: 'todo', label: 'À faire' },
+  { id: 'in-progress', label: 'En cours' },
+  { id: 'done', label: 'Terminé' },
+];
+
+const STATUS_NAMES = { 'todo': 'À faire', 'in-progress': 'En cours', 'done': 'Terminé' };
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  COLUMNS.forEach(col => {
+    const tasks = TASKS.filter(t => t.status === col.id);
+    const colEl = document.createElement('div');
+    colEl.className = 'column';
+    colEl.dataset.column = col.id;
+    colEl.innerHTML = `
+      <div class="column-header">
+        <h2>${col.label}</h2>
+        <span class="column-count">${tasks.length}</span>
+      </div>
+      <div class="card-list" data-status="${col.id}"></div>
+    `;
+    const list = colEl.querySelector('.card-list');
+    tasks.forEach(task => { list.appendChild(createCard(task)); });
+    board.appendChild(colEl);
+  });
+  setupDragDrop();
+}
+
+function createCard(task) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.draggable = true;
+  card.dataset.id = task.id;
+
+  const assignedUsers = USERS.filter(u => task.assigned.includes(u.id));
+  const extraCount = task.assigned.length - 4;
+
+  card.innerHTML = `
+    <div class="card-body">
+      <div class="card-title">${esc(task.title)}</div>
+      <div class="card-meta">
+        <span class="priority priority-${task.priority}">
+          <span class="priority-dot"></span>${task.priority === 'high' ? 'Haute' : task.priority === 'medium' ? 'Moyenne' : 'Basse'}
+        </span>
+        <div class="card-actions">
+          <button class="card-btn" data-action="delete" aria-label="Supprimer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+      ${assignedUsers.length ? `
+      <div class="card-footer">
+        <div class="users">
+          ${assignedUsers.slice(0, 4).map(u => `<span class="user-avatar" style="background:${u.color}" title="${esc(u.name)}">${u.name[0]}</span>`).join('')}
+          ${extraCount > 0 ? `<span class="user-avatar-more">+${extraCount}</span>` : ''}
+        </div>
+      </div>` : ''}
+    </div>
+  `;
+
+  card.querySelector('[data-action="delete"]').addEventListener('click', e => {
+    e.stopPropagation();
+    deleteTask(task.id);
+  });
+
+  card.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', task.id);
+    card.classList.add('dragging');
+  });
+  card.addEventListener('dragend', () => { card.classList.remove('dragging'); });
+
+  return card;
+}
+
+// ─── Drag & Drop ───
+function setupDragDrop() {
+  document.querySelectorAll('.card-list').forEach(list => {
+    list.addEventListener('dragover', e => { e.preventDefault(); list.parentElement.classList.add('drag-over'); });
+    list.addEventListener('dragenter', e => { e.preventDefault(); list.parentElement.classList.add('drag-over'); });
+    list.addEventListener('dragleave', () => { list.parentElement.classList.remove('drag-over'); });
+    list.addEventListener('drop', e => {
+      e.preventDefault();
+      list.parentElement.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      const status = list.dataset.status;
+      moveTask(id, status);
+    });
+  });
+}
+
+// ─── FAB ───
+const fab = document.getElementById('fab');
+fab.addEventListener('click', () => openModal('trashModal'));
+fab.addEventListener('dragover', e => { e.preventDefault(); fab.classList.add('drag-over'); });
+fab.addEventListener('dragenter', e => { e.preventDefault(); fab.classList.add('drag-over'); });
+fab.addEventListener('dragleave', () => { fab.classList.remove('drag-over'); });
+fab.addEventListener('drop', e => {
+  e.preventDefault();
+  fab.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain');
+  if (id) { deleteTask(id); fab.classList.add('drop-anim'); setTimeout(() => fab.classList.remove('drop-anim'), 500); }
+});
+
+// ─── Operations ───
+function deleteTask(id) {
+  const idx = TASKS.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  const [task] = TASKS.splice(idx, 1);
+  TRASH.push(task);
+  render();
+}
+
+function moveTask(id, status) {
+  const task = TASKS.find(t => t.id === id);
+  if (!task) return;
+  task.status = status;
+  render();
+}
+
+function addTask(title, priority, assigned) {
+  TASKS.push({ id: 't' + nextId++, title, priority, status: 'todo', assigned });
+  render();
+}
+
+// ─── Modals ───
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open, .hero-overlay.open').forEach(el => el.classList.remove('open'));
+  }
+});
+
+// ─── Add Task ───
+document.getElementById('addTaskBtn').addEventListener('click', () => {
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskPriority').value = 'medium';
+  updateAssignOptions();
+  openModal('addModal');
+});
+document.getElementById('addModalClose').addEventListener('click', () => closeModal('addModal'));
+document.getElementById('addModalCancel').addEventListener('click', () => closeModal('addModal'));
+document.getElementById('addModalSave').addEventListener('click', () => {
+  const title = document.getElementById('taskTitle').value.trim();
+  if (!title) return;
+  const priority = document.getElementById('taskPriority').value;
+  const select = document.getElementById('taskAssign');
+  const assigned = Array.from(select.selectedOptions).map(o => o.value);
+  addTask(title, priority, assigned);
+  closeModal('addModal');
+});
+
+function updateAssignOptions() {
+  const select = document.getElementById('taskAssign');
+  select.innerHTML = '';
+  USERS.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.id;
+    opt.textContent = u.name;
+    select.appendChild(opt);
+  });
+}
+
+// ─── Trash ───
+document.getElementById('trashModalClose').addEventListener('click', () => closeModal('trashModal'));
+document.getElementById('trashCleanAll').addEventListener('click', () => {
+  TRASH = [];
+  renderTrashList();
+});
+
+function restoreTask(id) {
+  const idx = TRASH.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  const [task] = TRASH.splice(idx, 1);
+  TASKS.push(task);
+  render();
+}
+
+function renderTrashList() {
+  const list = document.getElementById('trashList');
+  if (!TRASH.length) {
+    list.innerHTML = '<div class="trash-empty">La corbeille est vide</div>';
+    document.getElementById('trashCleanAll').style.display = 'none';
+    return;
+  }
+  document.getElementById('trashCleanAll').style.display = '';
+  list.innerHTML = TRASH.map(t => `
+    <div class="trash-item">
+      <span>${esc(t.title)}</span>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn btn-sm" data-restore="${t.id}">Restaurer</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-restore]').forEach(btn => {
+    btn.addEventListener('click', () => restoreTask(btn.dataset.restore));
+  });
+}
+
+// ─── Theme ───
+function initTheme() {
+  const stored = localStorage.getItem('kb-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = stored || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+initTheme();
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.classList.add('theme-transitioning');
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('kb-theme', next);
+  setTimeout(() => html.classList.remove('theme-transitioning'), 350);
+});
+
+// ─── Footer ───
+let footerOpen = false;
+
+function renderFooter() {
+  const scroll = document.getElementById('footerScroll');
+  const countEl = document.getElementById('footerTaskCount');
+
+  const allTasks = [...TASKS];
+  countEl.textContent = allTasks.length ? `(${allTasks.length})` : '';
+
+  if (!allTasks.length) {
+    scroll.innerHTML = '<div class="footer-empty">Aucune tâche</div>';
+    return;
+  }
+
+  const sortPrio = { high: 0, medium: 1, low: 2 };
+  allTasks.sort((a, b) => sortPrio[a.priority] - sortPrio[b.priority]);
+
+  scroll.innerHTML = allTasks.map(t => {
+    const statusIcon = t.status === 'todo'
+      ? '<svg class="status-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/></svg>'
+      : t.status === 'in-progress'
+      ? '<svg class="status-icon" data-status="in-progress" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 4v6l4 2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg class="status-icon" data-status="done" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M6 10l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const prioLabel = t.priority === 'high' ? 'Haute' : t.priority === 'medium' ? 'Moyenne' : 'Basse';
+    const assignedUsers = USERS.filter(u => t.assigned.includes(u.id));
+    return `
+      <div class="footer-task" data-id="${t.id}">
+        <div class="ft-header">
+          <span class="ft-prio-group">
+            <span class="ft-prio ${t.priority}"></span>
+            <span class="ft-prio-label ${t.priority}">${prioLabel}</span>
+          </span>
+          ${statusIcon}
+        </div>
+        <div class="ft-body">${esc(t.title)}</div>
+        ${assignedUsers.length ? `
+        <div class="ft-users">
+          ${assignedUsers.map(u => `<span class="ft-user" style="background:${u.color}" title="${esc(u.name)}">${u.name[0]}</span>`).join('')}
+        </div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  scroll.querySelectorAll('.footer-task').forEach(el => {
+    el.addEventListener('click', () => openHero(el.dataset.id));
+  });
+}
+
+document.getElementById('footerToggle').addEventListener('click', () => {
+  footerOpen = !footerOpen;
+  document.getElementById('footerBar').classList.toggle('open', footerOpen);
+  if (footerOpen) renderFooter();
+});
+
+// ─── Hero Modal ───
+function openHero(id) {
+  const task = TASKS.find(t => t.id === id);
+  if (!task) return;
+
+  const assignedUsers = USERS.filter(u => task.assigned.includes(u.id));
+  const statusLabel = STATUS_NAMES[task.status];
+  const priorityLabel = task.priority === 'high' ? 'Haute' : task.priority === 'medium' ? 'Moyenne' : 'Basse';
+
+  const statusIcon = task.status === 'todo'
+    ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/></svg>'
+    : task.status === 'in-progress'
+    ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 4v6l4 2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M6 10l3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  document.getElementById('heroCover').innerHTML = `
+    <div class="hero-cover-top">
+      <h3 class="hero-title">${esc(task.title)}</h3>
+    </div>
+    <div class="hero-badges">
+      <span class="hero-badge hero-badge-status" data-status="${task.status}">${statusIcon}${statusLabel}</span>
+      <span class="hero-badge priority priority-${task.priority}">
+        <span class="priority-dot"></span>${priorityLabel}
+      </span>
+    </div>
+  `;
+
+  document.getElementById('heroBody').innerHTML = `
+    ${assignedUsers.length ? `
+    <div class="hero-section">
+      <h4>Assigné à</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${assignedUsers.map(u => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;background:var(--surface-elevated);border:1px solid var(--border);border-radius:99px;">
+            <span class="user-avatar" style="background:${u.color};width:24px;height:24px;font-size:10px;border:none;margin:0;">${u.name[0]}</span>
+            <span style="font-size:13px;">${esc(u.name)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+    <div class="hero-section">
+      <h4>ID</h4>
+      <span style="font-size:12px;color:var(--text-tertiary);font-family:monospace;">${esc(task.id)}</span>
+    </div>
+  `;
+
+  document.getElementById('heroOverlay').classList.add('open');
+}
+
+document.getElementById('heroOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('heroOverlay')) {
+    document.getElementById('heroOverlay').classList.remove('open');
+  }
+});
+document.getElementById('heroClose').addEventListener('click', () => {
+  document.getElementById('heroOverlay').classList.remove('open');
+});
+
+// ─── Utils ───
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ─── Init ───
+render();
+</script>
+</body>
+</html>
