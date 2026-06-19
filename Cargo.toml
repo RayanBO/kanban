@@ -1,6 +1,6 @@
 [package]
 name = "kb"
-version = "0.1.0"
+version = "1.1.0"
 edition = "2024"
 
 [[bin]]
@@ -14,3 +14,7 @@ serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde_yaml = "0.9"
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util", "sync", "time"] }
+tower-http = { version = "0.6", features = ["fs", "cors"] }
+tower = "0.5"

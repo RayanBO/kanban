@@ -1,67 +1,114 @@
 # kanban cli
 
-CLI Kanban builder avec Rust. Version actuelle : v2.
+CLI Kanban builder avec Rust + Dashboard web Next.js.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    kb (Rust CLI)                     │
+│  init · add · list · move · del · trash · dashboard │
+└──────────┬──────────────────────────────────────────┘
+           │ lit/écrit
+           ▼
+┌────────────────────┐
+│  .kanban/          │ ← stockage fichier unique
+│  └── kanban.md     │   (YAML + Markdown)
+└────────────────────┘
+           ▲
+┌──────────┴──────────────────────────────────────────┐
+│            Dashboard (Next.js + shadcn)              │
+│  Page Kanban · API routes → exec kb CLI             │
+│  Dark/light · Drag & drop · Corbeille               │
+└─────────────────────────────────────────────────────┘
+```
+
+Le CLI écrit les données dans `.kanban/kanban.md` (frontmatter YAML + tables Markdown).
+Le dashboard Next.js lit/écrit via les API routes qui appellent le binaire `kb`.
+
+---
 
 ## Stockage
 
-Dossier `.kanban/` créé dans le dossier de travail courant par `kb init`.
+Dossier `.kanban/` créé dans le dossier courant par `kb init`.
 
 ```
 .kanban/
 ├── kanban.md          # données (YAML frontmatter + tables Markdown)
 ├── kb-config.yaml     # configuration
-├── dashboard.bat      # lanceur Windows
-└── dashboard.sh       # lanceur Unix
+├── dashboard.bat      # lanceur Windows → kb dashboard
+└── dashboard.sh       # lanceur Unix → kb dashboard
 ```
 
 ---
 
-## Commandes v1
+## Commandes
 
 ```bash
-# Initialiser kanban dans le dossier courant
-kb init
-# → crée .kanban/kanban.md + config + dashboards
+# --- Installation ---
+
+# Installer kb dans le PATH (Windows)
+kb install
+# → copie le binaire + ajoute au PATH utilisateur
+# Ouvre un nouveau terminal après installation
+
+# --- Initialisation ---
+
+kb init                           # interactif (Y/n, Enter accepte)
+kb init --use-trash               # activer la corbeille (défaut: true)
+kb init --use-trash=false         # désactiver la corbeille
+kb init --no-init-dashboard       # sans scripts dashboard
+
+# --- Dashboard ---
+
+kb dashboard                      # interface web localhost:5522
+# DEV  (cargo run)     → npx next dev   (hot reload)
+# PROD (binaire installé) → npx next start (build auto si manquant)
 
 # --- Tâches ---
 
 # Ajouter une tâche
-kb add "task" -p high --to "user-id-1,user-id-2,..."
+kb add "title" -p high --to "user-id-1,user-id-2"
 # → retourne id-task
 
-# Lister les tâches (corbeille exclue)
+# Lister (corbeille exclue)
 kb list
-kb list -p high        # filtre par priorité (low | medium | high)
-kb list -s done        # filtre par statut (todo | in-progress | done)
+kb list -p high        # filtre priorité (low | medium | high)
+kb list -s done        # filtre statut (todo | in-progress | done)
 
-# Déplacer une tâche de statut
+# Changer le statut
 kb move "task-id" done
+
+# Supprimer (→ corbeille si use_trash=true)
+kb del "task-id"
+
+# --- Corbeille ---
+
+kb trash                          # lister
+kb trash --restore "task-id"      # restaurer
+kb trash --clean-all              # vider définitivement
 
 # --- Utilisateurs ---
 
-# Créer un utilisateur
 kb user add "username" --pic "path/image"
 # → retourne id-user
 
-# Modifier un utilisateur
-kb user put "user-id" --username "nouveau_nom" --pic "nouveau/path"
-
-# Supprimer un utilisateur
+kb user put "user-id" --username "new" --pic "new/path"
 kb user del "user-id"
-
-# Afficher les utilisateurs
 kb user show
+
+# --- Configuration ---
+
+kb config                         # voir
+kb config --set use_trash=false
+kb config --set theme_dashboard=light
 
 # --- Données ---
 
-# KPIs globaux (corbeille exclue)
-kb status
+kb status                         # KPIs (corbeille exclue)
+kb data                           # dump JSON
+kb data --to-file path/data.json  # export JSON
 
-# Dump JSON dans le terminal
-kb data
-
-# Exporter JSON vers fichier
-kb data --to-file path/kanban.json
 ```
 
 ### Priorités : `low` | `medium` | `high`
@@ -69,83 +116,48 @@ kb data --to-file path/kanban.json
 
 ---
 
-## Commandes v2
+## Dashboard
 
-```bash
-# --- Init avancé ---
+Le dashboard est une app Next.js (dans `dashboard/`) avec **shadcn/ui** et **Tabler Icons**.
 
-# Initialiser avec options
-kb init                           # mode interactif (demande confirmation)
-kb init --use-trash               # activer la corbeille
-kb init --use-trash=false         # désactiver la corbeille
-kb init --no-init-dashboard       # sans créer les scripts dashboard
+| Fonctionnalité | Détail |
+|---|---|
+| Kanban 3 colonnes | À faire / En cours / Terminé |
+| Drag & drop | Glisser une carte entre colonnes |
+| Badges priorité | low (vert) · medium (ambre) · high (rose) |
+| Assignation | Avatars utilisateurs sur les cartes |
+| Corbeille | Drop une carte → corbeille, restaurer, vider |
+| Dark/Light | Toggle persistant dans localStorage |
+| Ajout rapide | Dialog avec titre, priorité, assignés |
 
-# --- Corbeille ---
+Le dashboard détecte automatiquement le mode :
 
-# Supprimer une tâche (vers corbeille si use_trash=true)
-kb del "task-id"
-
-# Gérer la corbeille
-kb trash                          # lister les tâches corbeillées
-kb trash --restore "task-id"      # restaurer une tâche
-kb trash --clean-all              # vider la corbeille définitivement
-
-# --- Configuration ---
-
-# Voir la configuration
-kb config
-
-# Modifier la configuration
-kb config --set use_trash=false
-kb config --set theme_dashboard=light
-```
+- **DEV** : binaire dans `target/debug/` → `npx next dev` (hot reload)
+- **PROD** : binaire installé → `npx next start` (build auto si `.next/` absent)
 
 ---
 
 ## Build & Install
 
-### Dev
 ```powershell
-cargo build                        # debug → target/debug/kb.exe
-cargo run -- init                  # test sans installer
+cargo build                  # debug → target/debug/kb.exe
+cargo build --release        # release → target/release/kb.exe
 ```
 
-### Release
-```powershell
-cargo build --release              # optimisé → target/release/kb.exe
-```
+**Installation (Windows)** — 3 façons :
 
-### Installer (Windows)
+| Méthode | Commande |
+|---|---|
+| Double-clic | `target/release/kb.exe` (auto-install) |
+| Terminal | `target/release/kb.exe install` |
+| Script | `powershell -ExecutionPolicy Bypass -File install.ps1` |
 
-**Script PowerShell** — copie + PATH automatique, sans droits admin :
-```powershell
-powershell -ExecutionPolicy Bypass -File install.ps1
-```
-
-## à venir :
-
-**Installeur .msi** — installeur graphique Windows :
-```powershell
-cargo install cargo-wix            # une seule fois
-cargo wix                          # génère target/wix/kb-x.x.x-x86_64.msi
-```
+Après installation, ouvre un **nouveau terminal** et tape `kb --version`.
 
 ---
 
-## v3
+## À venir
 
 ```bash
-kb dashboard
-# → interface web kanban sur localhost:5522
-#   drag & drop, dark mode, mise à jour en temps réel
-```
-
-## v4 (à venir)
-
-```bash
-kb notif
-# → notifier les users de leurs tâches assignées
-
-kb add --agent
-# → assigner une tâche à un agent code local
+kb notif              # notification users assignés
 ```

@@ -1,8 +1,10 @@
 pub mod add;
 pub mod config;
+pub mod dashboard;
 pub mod data;
 pub mod del;
 pub mod init;
+pub mod install;
 pub mod list;
 pub mod move_task;
 pub mod status;

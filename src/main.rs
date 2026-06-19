@@ -1,7 +1,8 @@
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 
 mod commands;
 mod models;
+mod server;
 mod store;
 
 use models::{Priority, Status};
@@ -79,6 +80,12 @@ enum Command {
         #[arg(long)]
         clean_all: bool,
     },
+
+    /// Installer kb dans le PATH utilisateur
+    Install,
+
+    /// Lancer le dashboard web
+    Dashboard,
 }
 
 #[derive(Subcommand)]
@@ -106,6 +113,22 @@ enum UserAction {
 }
 
 fn main() {
+    if std::env::args().len() <= 1 {
+        if commands::install::is_installed() {
+            let mut cmd = Cli::command();
+            let _ = cmd.print_help();
+            println!();
+            return;
+        }
+        let result = commands::install::run();
+        if let Err(e) = result {
+            eprintln!("Erreur: {e}");
+        }
+        println!("  Appuie sur une touche pour quitter...");
+        let _ = std::io::stdin().read_line(&mut String::new());
+        return;
+    }
+
     let cli = Cli::parse();
 
     let result = match cli.command {
@@ -179,6 +202,10 @@ fn main() {
         Command::Trash { restore, clean_all } => {
             commands::trash::run(restore, clean_all)
         }
+
+        Command::Install => commands::install::run(),
+
+        Command::Dashboard => commands::dashboard::run(),
     };
 
     if let Err(e) = result {
