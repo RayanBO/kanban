@@ -63,6 +63,15 @@ User { id, name, color }
 - Validation basique (titre requis)
 - Nouvelle tâche créée en statut `todo`
 
+### Search (Recherche)
+- Barre de recherche dans le header avec icône loupe
+- Focus → ouvre un overlay de résultats (mode hero)
+- Filtrage instantané par titre, utilisateur assigné, statut, priorité
+- Résultats affichent : titre (avec highlight), badge priorité, statut, avatars
+- Click sur un résultat → ouvre le hero modal de la tâche
+- Close via Escape, click overlay, ou blur avec délai
+- Responsive : s'adapte sur mobile
+
 ### Theme (Dark/Light)
 - CSS custom properties (variables) dans `:root` et `[data-theme="light"]`
 - Toggle bouton lune/soleil dans header
@@ -82,6 +91,16 @@ User { id, name, color }
 - Click card → opens hero modal with full details
 - Updates reactively when tasks change (add, move, trash)
 - Layout: flex column, board shrinks when footer opens
+- **Content Reveal Effect**: Cards blank at rest (just background/border). On hover → content fades in via `--r` CSS var:
+  - Hovered card: `--r: 1` (full content)
+  - 1st sibling: `--r: 0.6` (partial)
+  - 2nd sibling: `--r: 0.25` (faint)
+  - 3rd+ sibling: `--r: 0` (hidden)
+  - Controlled by `opacity: var(--r); transition: opacity 0.3s` on `.ft-header, .ft-body, .ft-users`
+- **3D Hover Chain**: CSS `perspective: 1000px` + `transform-style: preserve-3d`
+  - Hovered: `translateZ(60px) scale(1.015)`, accent border, `z-index: 100`
+  - Siblings: progressive `rotateY(±4°→±9°)` + `translateZ(30px→0)` + `brightness(0.95→0.85)`
+  - Right chain via `+` combinator, left chain via `:has()` combinators
 
 ### Hero Modal
 - Large overlay modal for task detail view
