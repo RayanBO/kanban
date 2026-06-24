@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 88 84%22%3E%3Cpath d=%22M0.102275 52.3636C0.0340931 48.5909 0.647729 45.5568 1.94318 43.2614C3.23864 40.9659 4.92046 39.2955 6.98864 38.25C9.07955 37.2045 11.2841 36.6818 13.6023 36.6818C15.9205 36.6818 18.0341 37.1932 19.9432 38.2159C21.875 39.2159 24.0795 40.7955 26.5568 42.9545C28.2386 44.4091 29.5795 45.4318 30.5795 46.0227C31.6023 46.6136 32.7159 46.9091 33.9205 46.9091C35.875 46.9091 37.4205 46.2045 38.5568 44.7955C39.6932 43.3636 40.2386 41.2955 40.1932 38.5909H47.5568C47.625 42.3636 47.0114 45.3977 45.7159 47.6932C44.4432 49.9886 42.7614 51.6591 40.6705 52.7045C38.5795 53.75 36.375 54.2727 34.0568 54.2727C31.7386 54.2727 29.625 53.7727 27.7159 52.7727C25.8068 51.75 23.6023 50.1591 21.1023 48C19.4432 46.5455 18.1023 45.5227 17.0795 44.9318C16.0568 44.3409 14.9432 44.0455 13.7386 44.0455C11.8977 44.0455 10.375 44.6932 9.17046 45.9886C7.98864 47.2614 7.42046 49.3864 7.46591 52.3636H0.102275ZM87.5199 -1.90735e-06L65.0199 83.5909H57.6563L80.1563 -1.90735e-06H87.5199Z%22 fill=%22%2339D353%22/%3E%3C/svg%3E">
+  <link rel="icon" href="favicon.svg">
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -41,6 +41,10 @@
       --accent-dim: #2da043;
       --border: #30363d;
       --radius: 8px;
+    }
+
+    @view-transition {
+      navigation: auto;
     }
 
     html {
@@ -87,6 +91,7 @@
       padding: 20px 24px;
       max-width: 1088px;
       margin: 0 auto;
+      view-transition-name: header;
     }
 
     .logo {
@@ -94,6 +99,7 @@
       font-weight: 700;
       font-size: 18px;
       color: var(--text);
+      view-transition-name: logo;
     }
 
     .logo span {
@@ -714,6 +720,7 @@
     <nav class="header-links" aria-label="Main navigation">
       <a href="#features">Features</a>
       <a href="#install">Install</a>
+      <a href="docs/">Docs</a>
       <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener" class="btn-outline">
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>
         <span>GitHub</span>
@@ -739,6 +746,7 @@
       <p>A portable CLI Kanban board that lives in your terminal and opens a web dashboard when you need visuals. Written in Rust — one binary, zero dependencies.</p>
       <div class="hero-actions">
         <a href="#install" class="btn-primary">Get Started</a>
+        <a href="docs/" class="btn-secondary">View Docs</a>
         <a href="#demo" class="btn-secondary">See it in action</a>
       </div>
     </div>
@@ -848,6 +856,7 @@
     <div class="logo"><span>~</span>/kb</div>
     <p>A personal project by <a href="https://github.com/rayanbo" target="_blank" rel="noopener">Rayan Rav</a></p>
     <div class="links">
+      <a href="docs/">Docs</a>
       <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/rayanbo/kanban/releases" target="_blank" rel="noopener">Releases</a>
     </div>

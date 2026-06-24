@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kb — CLI Reference</title>
+  <meta name="description" content="Complete reference for the kb Kanban CLI — all commands, flags, arguments, and examples.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://rayanbo.github.io/kanban/docs/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rayanbo.github.io/kanban/docs/">
+  <meta property="og:title" content="kb — CLI Reference">
+  <meta property="og:description" content="Complete reference for the kb Kanban CLI — all commands, flags, arguments, and examples.">
+  <meta property="og:image" content="https://rayanbo.github.io/kanban/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="kb — CLI Reference">
+  <meta name="twitter:description" content="Complete reference for the kb Kanban CLI — all commands, flags, arguments, and examples.">
+  <meta name="twitter:image" content="https://rayanbo.github.io/kanban/og-image.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="../favicon.svg">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --text: #e6edf3;
+      --text-secondary: #7d8590;
+      --accent: #39d353;
+      --accent-dim: #2da043;
+      --border: #30363d;
+      --radius: 8px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    a {
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color .2s;
+    }
+
+    a:hover {
+      color: var(--text);
+      opacity: 1;
+    }
+
+    img, svg {
+      display: block;
+    }
+
+    @view-transition {
+      navigation: auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      view-transition-name: header;
+    }
+
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      view-transition-name: logo;
+    }
+
+    .logo span {
+      color: var(--accent);
+      margin-right: 2px;
+    }
+
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .header-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: none;
+      transition: color .2s;
+    }
+
+    .header-links a:hover {
+      color: var(--text);
+    }
+
+    .header-links a.active {
+      color: var(--accent);
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text) !important;
+      border: 1px solid var(--border);
+      transition: border-color .2s;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--text-secondary);
+    }
+
+    .btn-outline svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    main {
+      padding: 40px 0 80px;
+    }
+
+    main .container h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    main .container > p {
+      color: var(--text-secondary);
+      font-size: 15px;
+      margin-bottom: 48px;
+    }
+
+    .cmd-group {
+      margin-bottom: 40px;
+    }
+
+    .cmd-group h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 8px;
+    }
+
+    .cmd-group h2:not(:first-child) {
+      margin-top: 56px;
+    }
+
+    .cmd-block {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+
+    .cmd-block .cmd-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .cmd-block .cmd-syntax {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--bg);
+      border-radius: 4px;
+    }
+
+    .cmd-block .cmd-desc {
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .cmd-block .cmd-flags {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .cmd-block .cmd-flags th {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cmd-block .cmd-flags td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+    }
+
+    .cmd-block .cmd-flags tr:last-child td {
+      border-bottom: none;
+    }
+
+    .cmd-block .cmd-flags td:first-child {
+      white-space: nowrap;
+      color: var(--text);
+      width: 140px;
+    }
+
+    .cmd-block .cmd-flags td:nth-child(2) {
+      color: var(--accent-dim);
+      width: 80px;
+    }
+
+    .cmd-block .cmd-flags td:nth-child(3) {
+      color: var(--text-secondary);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .cmd-block .cmd-example {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      display: block;
+      padding: 4px 0;
+      line-height: 1.7;
+    }
+
+    .cmd-block .cmd-example .prompt {
+      color: var(--accent);
+    }
+
+    .cmd-block .cmd-example .comment {
+      color: var(--border);
+      font-style: italic;
+    }
+
+    .cmd-block .cmd-example:first-of-type {
+      margin-top: 4px;
+    }
+
+    toc {
+      display: block;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 40px;
+    }
+
+    toc h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 12px;
+    }
+
+    toc a {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+      padding: 3px 0;
+      border-bottom: none;
+      transition: color .2s;
+    }
+
+    toc a:hover {
+      color: var(--accent);
+    }
+
+    toc a.toc-sub {
+      padding-left: 16px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .top-link {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      border-bottom: none;
+      margin-top: 8px;
+      transition: color .2s;
+    }
+
+    .top-link:hover {
+      color: var(--accent);
+    }
+
+    footer {
+      padding: 32px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    footer .logo {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    footer p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    footer p a {
+      color: var(--text);
+      border-bottom: 1px solid transparent;
+    }
+
+    footer p a:hover {
+      border-color: var(--accent);
+    }
+
+    footer .links {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    footer .links a {
+      font-size: 13px;
+      color: var(--text-secondary);
+      border-bottom: none;
+      transition: color .2s;
+    }
+
+    footer .links a:hover {
+      color: var(--text);
+    }
+
+    footer .build-info {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--border);
+    }
+
+    @media (max-width: 700px) {
+      .cmd-block .cmd-flags td:first-child {
+        width: 100px;
+        font-size: 11.5px;
+      }
+      .cmd-block .cmd-flags td:nth-child(2) {
+        width: 60px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .cmd-block {
+        padding: 16px;
+      }
+      .cmd-block .cmd-flags, .cmd-block .cmd-flags tbody, .cmd-block .cmd-flags tr {
+        display: block;
+      }
+      .cmd-block .cmd-flags td {
+        display: inline;
+        padding: 2px 4px;
+        border: none;
+      }
+      .cmd-block .cmd-flags td:first-child {
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="../" class="logo" style="border-bottom: none"><span>~</span>/kb</a>
+    <nav class="header-links" aria-label="Main navigation">
+      <a href="../">Home</a>
+      <a href="./" class="active">Docs</a>
+      <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener" class="btn-outline">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>
+        <span>GitHub</span>
+      </a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="container">
+      <h1>CLI Reference</h1>
+      <p>Everything you can do with <span class="mono">kb</span> — commands, arguments, flags, and examples. Version <span class="mono">1.2.2</span>.</p>
+
+      <toc>
+        <h3>Commands</h3>
+        <a href="#init">init</a>
+        <a href="#install">install</a>
+        <a href="#add">add</a>
+        <a href="#list">list</a>
+        <a href="#move">move</a>
+        <a href="#assign">assign</a>
+        <a href="#del">del</a>
+        <a href="#user" class="toc-sub">user add</a>
+        <a href="#user" class="toc-sub">user put</a>
+        <a href="#user" class="toc-sub">user del</a>
+        <a href="#user" class="toc-sub">user show</a>
+        <a href="#status">status</a>
+        <a href="#data">data</a>
+        <a href="#config">config</a>
+        <a href="#trash">trash</a>
+        <a href="#dashboard">dashboard</a>
+      </toc>
+
+      <!-- init -->
+      <div class="cmd-group" id="init">
+        <h2>kb init</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">init</div>
+          <div class="cmd-desc">Initialise a new Kanban board in the current directory. Creates <span class="mono">.kanban/kanban.md</span> and <span class="mono">.kanban/kb-config.yaml</span>.</div>
+          <div class="cmd-syntax">kb init [--use-trash] [--no-init-dashboard]</div>
+          <table class="cmd-flags">
+            <tr><th>Flag</th><th>Type</th><th>Description</th></tr>
+            <tr><td>--use-trash</td><td>bool</td><td>Enable trash (undo delete). Prompts interactively if omitted.</td></tr>
+            <tr><td>--no-init-dashboard</td><td>bool</td><td>Skip dashboard setup.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="comment"># Accept defaults</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb init</span>
+          <span class="cmd-example"><span class="comment"># Enable trash non-interactively</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb init --use-trash</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- install -->
+      <div class="cmd-group" id="install">
+        <h2>kb install</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">install</div>
+          <div class="cmd-desc">Copy the binary to <span class="mono">%LOCALAPPDATA%\Programs\kb\kb.exe</span> and add it to the user PATH. Windows only. Runs automatically on first launch.</div>
+          <div class="cmd-syntax">kb install</div>
+          <span class="cmd-example"><span class="prompt">$</span> kb install</span>
+          <span class="cmd-example"><span class="comment"># &#8594; Installed to %LOCALAPPDATA%\Programs\kb\kb.exe</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- add -->
+      <div class="cmd-group" id="add">
+        <h2>kb add</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">add</div>
+          <div class="cmd-desc">Create a new task with status <span class="mono">todo</span>. Assign users and set priority.</div>
+          <div class="cmd-syntax">kb add &lt;title&gt; [-p &lt;priority&gt;] [--to &lt;users&gt;]</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>title</td><td>yes</td><td>Task title (positional). Wrap in quotes for multi-word titles.</td></tr>
+            <tr><td>-p, --priority</td><td>no</td><td>Priority: <span class="mono">low</span>, <span class="mono">medium</span> (default), or <span class="mono">high</span>.</td></tr>
+            <tr><td>--to</td><td>no</td><td>Comma-separated user IDs to assign.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="comment"># Simple task</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb add "Implement login"</span>
+          <span class="cmd-example"><span class="comment"># High priority task assigned to users</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb add "Fix memory leak" -p high --to "uid1,uid2"</span>
+          <span class="cmd-example"><span class="comment"># &#8594; Task created with ID a1b2c3d4</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- list -->
+      <div class="cmd-group" id="list">
+        <h2>kb list</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">list</div>
+          <div class="cmd-desc">List all non-trashed tasks. Optionally filter by priority or status.</div>
+          <div class="cmd-syntax">kb list [-p &lt;priority&gt;] [-s &lt;status&gt;]</div>
+          <table class="cmd-flags">
+            <tr><th>Flag</th><th>Values</th><th>Description</th></tr>
+            <tr><td>-p, --priority</td><td><span class="mono">low</span>, <span class="mono">medium</span>, <span class="mono">high</span></td><td>Filter by priority level.</td></tr>
+            <tr><td>-s, --status</td><td><span class="mono">todo</span>, <span class="mono">in-progress</span>, <span class="mono">done</span></td><td>Filter by status.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="comment"># All tasks</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb list</span>
+          <span class="cmd-example"><span class="comment"># High priority, in progress</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb list -p high -s in-progress</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- move -->
+      <div class="cmd-group" id="move">
+        <h2>kb move</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">move</div>
+          <div class="cmd-desc">Change a task's status. Moves it between columns on the board.</div>
+          <div class="cmd-syntax">kb move &lt;task_id&gt; &lt;new_status&gt;</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>task_id</td><td>yes</td><td>UUID of the task to move.</td></tr>
+            <tr><td>new_status</td><td>yes</td><td>Target status: <span class="mono">todo</span>, <span class="mono">in-progress</span>, or <span class="mono">done</span>.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb move a1b2c3d4 done</span>
+          <span class="cmd-example"><span class="comment"># &#8594; Task a1b2c3d4: in-progress &#8594; done</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- assign -->
+      <div class="cmd-group" id="assign">
+        <h2>kb assign</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">assign</div>
+          <div class="cmd-desc">Replace the user assignment list of an existing task.</div>
+          <div class="cmd-syntax">kb assign &lt;task_id&gt; --to &lt;users&gt;</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>task_id</td><td>yes</td><td>UUID of the task.</td></tr>
+            <tr><td>--to</td><td>yes</td><td>Comma-separated user IDs to assign.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb assign a1b2c3d4 --to "uid1,uid2"</span>
+          <span class="cmd-example"><span class="comment"># &#8594; Task a1b2c3d4 assigned.</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- del -->
+      <div class="cmd-group" id="del">
+        <h2>kb del</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">del</div>
+          <div class="cmd-desc">Delete a task. Moves to trash if enabled in config (default: yes), otherwise permanently removes it.</div>
+          <div class="cmd-syntax">kb del &lt;task_id&gt;</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>task_id</td><td>yes</td><td>UUID of the task to delete.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb del a1b2c3d4</span>
+          <span class="cmd-example"><span class="comment"># &#8594; Moves to trash (use_trash: true)</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- user -->
+      <div class="cmd-group" id="user">
+        <h2>kb user</h2>
+
+        <div class="cmd-block">
+          <div class="cmd-name">user add</div>
+          <div class="cmd-desc">Create a new user with an optional profile picture.</div>
+          <div class="cmd-syntax">kb user add &lt;username&gt; [--pic &lt;path&gt;]</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>username</td><td>yes</td><td>Display name for the user.</td></tr>
+            <tr><td>--pic</td><td>no</td><td>Path to a profile picture.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb user add "Alice" --pic "avatars/alice.png"</span>
+          <span class="cmd-example"><span class="comment"># &#8594; User created with ID u1v2w3x4</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+
+        <div class="cmd-block">
+          <div class="cmd-name">user put</div>
+          <div class="cmd-desc">Modify an existing user's name or profile picture.</div>
+          <div class="cmd-syntax">kb user put &lt;id&gt; [--username &lt;name&gt;] [--pic &lt;path&gt;]</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>id</td><td>yes</td><td>UUID of the user to modify.</td></tr>
+            <tr><td>--username</td><td>no</td><td>New display name.</td></tr>
+            <tr><td>--pic</td><td>no</td><td>New profile picture path.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb user put u1v2w3x4 --username "Bob"</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+
+        <div class="cmd-block">
+          <div class="cmd-name">user del</div>
+          <div class="cmd-desc">Delete a user. Removes them from all task assignments.</div>
+          <div class="cmd-syntax">kb user del &lt;id&gt;</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>id</td><td>yes</td><td>UUID of the user to delete.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb user del u1v2w3x4</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+
+        <div class="cmd-block">
+          <div class="cmd-name">user show</div>
+          <div class="cmd-desc">List all users with their IDs, usernames, and profile pictures.</div>
+          <div class="cmd-syntax">kb user show</div>
+          <span class="cmd-example"><span class="prompt">$</span> kb user show</span>
+          <span class="cmd-example"><span class="comment"># &#8594; u1v2w3x4  Alice  avatars/alice.png</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- status -->
+      <div class="cmd-group" id="status">
+        <h2>kb status</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">status</div>
+          <div class="cmd-desc">Display board KPIs — total tasks, count by status and priority, percentage done, number of users.</div>
+          <div class="cmd-syntax">kb status</div>
+          <span class="cmd-example"><span class="prompt">$</span> kb status</span>
+          <span class="cmd-example"><span class="comment"># &#8594; 12 tasks · 3 in progress · 4 done · 33%</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- data -->
+      <div class="cmd-group" id="data">
+        <h2>kb data</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">data</div>
+          <div class="cmd-desc">Export all board data as JSON. Useful for backups, scripting, or piping to other tools.</div>
+          <div class="cmd-syntax">kb data [--to-file &lt;path&gt;]</div>
+          <table class="cmd-flags">
+            <tr><th>Flag</th><th>Description</th></tr>
+            <tr><td>--to-file</td><td>Write JSON to a file instead of stdout.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb data</span>
+          <span class="cmd-example"><span class="prompt">$</span> kb data --to-file backup.json</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- config -->
+      <div class="cmd-group" id="config">
+        <h2>kb config</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">config</div>
+          <div class="cmd-desc">View or update board configuration. Supports <span class="mono">use_trash</span> and <span class="mono">theme_dashboard</span>.</div>
+          <div class="cmd-syntax">kb config [--set &lt;KEY=VALUE&gt; ...]</div>
+          <table class="cmd-flags">
+            <tr><th>Flag</th><th>Description</th></tr>
+            <tr><td>--set</td><td>Set configuration values. Repeatable: <span class="mono">--set use_trash=false</span></td></tr>
+          </table>
+          <span class="cmd-example"><span class="comment"># View current config</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb config</span>
+          <span class="cmd-example"><span class="comment"># Disable trash</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb config --set use_trash=false</span>
+          <span class="cmd-example"><span class="comment"># Switch dashboard theme</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb config --set theme_dashboard=light</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- trash -->
+      <div class="cmd-group" id="trash">
+        <h2>kb trash</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">trash</div>
+          <div class="cmd-desc">List trashed tasks, restore them, or permanently empty the trash.</div>
+          <div class="cmd-syntax">kb trash [--restore &lt;id&gt;] [--clean-all]</div>
+          <table class="cmd-flags">
+            <tr><th>Flag</th><th>Description</th></tr>
+            <tr><td>--restore</td><td>Restore a trashed task by its UUID.</td></tr>
+            <tr><td>--clean-all</td><td>Permanently delete all trashed tasks.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="comment"># List trashed tasks</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb trash</span>
+          <span class="cmd-example"><span class="comment"># Restore a task</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb trash --restore a1b2c3d4</span>
+          <span class="cmd-example"><span class="comment"># Empty trash permanently</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb trash --clean-all</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- dashboard -->
+      <div class="cmd-group" id="dashboard">
+        <h2>kb dashboard</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">dashboard</div>
+          <div class="cmd-desc">Start the web dashboard server. Serves a drag-and-drop Kanban board UI with real-time updates on <span class="mono">localhost</span>.</div>
+          <div class="cmd-syntax">kb dashboard</div>
+          <span class="cmd-example"><span class="prompt">$</span> kb dashboard</span>
+          <span class="cmd-example"><span class="comment"># &#8594; Dashboard at http://localhost:5522</span></span>
+          <span class="cmd-example"><span class="comment"># Press Enter to quit</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="logo"><span>~</span>/kb</div>
+    <p>A personal project by <a href="https://github.com/rayanbo" target="_blank" rel="noopener">Rayan Rav</a></p>
+    <div class="links">
+      <a href="../">Home</a>
+      <a href="./">Docs</a>
+      <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/rayanbo/kanban/releases" target="_blank" rel="noopener">Releases</a>
+    </div>
+    <div class="build-info">Built with Rust &middot; Open source (MIT)</div>
+  </footer>
+</body>
+</html>
