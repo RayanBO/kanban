@@ -2,6 +2,8 @@
 
 CLI Kanban builder with Rust + embedded HTML/CSS/JS dashboard.
 
+🌐 Landing page: [https://rayanbo.github.io/kanban/](https://rayanbo.github.io/kanban/)
+
 ## Architecture
 
 ```text
