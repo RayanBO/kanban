@@ -926,13 +926,22 @@
         const assetMap = {};
         assets.forEach(a => { assetMap[a.name] = a.browser_download_url; });
 
+        const FALLBACK_MAP = {
+          windows: 'kb-windows-x64.exe',
+        };
+
         let foundAny = false;
         btns.forEach(btn => {
           const platform = btn.dataset.platform;
-          const filename = PLATFORM_MAP[platform];
-          const url = assetMap[filename];
+          let filename = PLATFORM_MAP[platform];
+          let url = assetMap[filename];
+          if (!url && FALLBACK_MAP[platform]) {
+            filename = FALLBACK_MAP[platform];
+            url = assetMap[filename];
+          }
           if (url) {
             btn.href = url;
+            btn.classList.remove('loading');
             foundAny = true;
           } else {
             btn.classList.add('loading');
@@ -945,7 +954,7 @@
           : 'Latest release';
 
       } catch {
-        badge.textContent = 'v1.2.2';
+        badge.textContent = 'v1.2.3';
         text.textContent = 'Check GitHub Releases';
         btns.forEach(btn => btn.classList.add('loading'));
       }
