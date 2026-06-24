@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kb — Kanban CLI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>▦</text></svg>">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --bg-terminal: #0d1117;
+      --text: #e6edf3;
+      --text-secondary: #7d8590;
+      --accent: #39d353;
+      --accent-dim: #2da043;
+      --border: #30363d;
+      --radius: 8px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+
+    a:hover {
+      opacity: .8;
+    }
+
+    img, svg {
+      display: block;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      max-width: 1088px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .header-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .header-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color .2s;
+    }
+
+    .header-links a:hover {
+      color: var(--text);
+      opacity: 1;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      background: transparent;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--text-secondary);
+      background: rgba(255,255,255,.03);
+    }
+
+    .btn-outline svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 60px 0 100px;
+      text-align: center;
+    }
+
+    .hero-terminal {
+      max-width: 680px;
+      margin: 0 auto 48px;
+      background: var(--bg-terminal);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: 0 0 40px rgba(57, 211, 83, .04), 0 0 120px rgba(57, 211, 83, .02);
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot:nth-child(1) { background: #ff5f57; }
+    .terminal-dot:nth-child(2) { background: #ffbd2e; }
+    .terminal-dot:nth-child(3) { background: #28c840; }
+
+    .terminal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-left: 12px;
+    }
+
+    .terminal-body {
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 260px;
+    }
+
+    .terminal-line {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .terminal-prompt {
+      color: var(--accent);
+    }
+
+    .terminal-command {
+      color: var(--text);
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 18px;
+      background: var(--accent);
+      animation: blink .8s step-end infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .terminal-output {
+      color: var(--text-secondary);
+    }
+
+    .terminal-output-success {
+      color: var(--accent);
+    }
+
+    .hero h1 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dim);
+      transform: translateY(-1px);
+      opacity: 1;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-secondary);
+      opacity: 1;
+    }
+
+    /* Divider */
+    .section-divider {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .section-divider hr {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Demo Terminal */
+    .demo {
+      padding: 100px 0;
+    }
+
+    .demo .container {
+      max-width: 800px;
+    }
+
+    .demo-terminal {
+      background: var(--bg-terminal);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(57, 211, 83, .03);
+    }
+
+    .demo-terminal .terminal-body {
+      min-height: 340px;
+      font-size: 14px;
+    }
+
+    .demo-caption {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* Features */
+    .features {
+      padding: 100px 0;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-weight: 700;
+      margin-bottom: 56px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      transition: border-color .2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--text-secondary);
+    }
+
+    .feature-icon {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* Install */
+    .install {
+      padding: 100px 0;
+    }
+
+    .install h2 {
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .install .subtitle {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 16px;
+      margin-bottom: 40px;
+    }
+
+    .install-box {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .install-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .install-tab {
+      padding: 10px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color .2s, background .2s;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .install-tab:not(:first-child) {
+      margin-left: -1px;
+    }
+
+    .install-tab.active {
+      color: var(--accent);
+      background: var(--bg-elevated);
+    }
+
+    .install-tab:hover:not(.active) {
+      color: var(--text);
+    }
+
+    .install-code {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 0 var(--radius) var(--radius) var(--radius);
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.8;
+      position: relative;
+      overflow-x: auto;
+    }
+
+    .install-code .prompt {
+      color: var(--accent);
+    }
+
+    .install-code .comment {
+      color: var(--text-secondary);
+    }
+
+    .install-code .cmd {
+      color: var(--text);
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color .2s, border-color .2s;
+    }
+
+    .copy-btn:hover {
+      color: var(--text);
+      border-color: var(--text-secondary);
+    }
+
+    .copy-btn.copied {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .install-note {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .install-note a {
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .install-note a:hover {
+      border-color: var(--accent);
+    }
+
+    /* Footer */
+    footer {
+      padding: 48px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    footer .logo {
+      margin-bottom: 16px;
+    }
+
+    footer p {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    footer .links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 16px;
+    }
+
+    footer .links a {
+      font-size: 14px;
+      color: var(--text-secondary);
+      transition: color .2s;
+    }
+
+    footer .links a:hover {
+      color: var(--text);
+    }
+
+    footer .build-info {
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-terminal {
+        border-radius: 0;
+        margin-left: -24px;
+        margin-right: -24px;
+        border-left: none;
+        border-right: none;
+      }
+
+      .terminal-body {
+        padding: 16px;
+        font-size: 13px;
+        min-height: 200px;
+      }
+
+      .demo-terminal .terminal-body {
+        min-height: 280px;
+      }
+
+      .hero {
+        padding: 40px 0 60px;
+      }
+
+      .demo, .features, .install {
+        padding: 60px 0;
+      }
+
+      .install-code {
+        font-size: 13px;
+        padding: 16px;
+      }
+
+      header {
+        padding: 16px;
+      }
+
+      .btn-outline span {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .terminal-body {
+        font-size: 12px;
+        min-height: 180px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo"><span>~</span>/kb</div>
+    <div class="header-links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener" class="btn-outline">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-terminal" id="heroTerminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+        <span class="terminal-title">kb</span>
+      </div>
+      <div class="terminal-body" id="heroTerminalBody"></div>
+    </div>
+
+    <div class="container">
+      <h1>Kanban in <span>your terminal</span></h1>
+      <p>A portable CLI Kanban board that lives in your terminal and opens a web dashboard when you need visuals. Written in Rust — one binary, zero dependencies.</p>
+      <div class="hero-actions">
+        <a href="#install" class="btn-primary">Get Started</a>
+        <a href="#demo" class="btn-secondary">See it in action</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Demo Terminal -->
+  <section class="demo" id="demo">
+    <div class="container">
+      <div class="demo-terminal" id="demoTerminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot"></div>
+          <div class="terminal-dot"></div>
+          <div class="terminal-dot"></div>
+          <span class="terminal-title">kb demo</span>
+        </div>
+        <div class="terminal-body" id="demoTerminalBody"></div>
+      </div>
+      <p class="demo-caption">Add tasks, assign them, move columns, open the dashboard — all from the terminal.</p>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Features -->
+  <section class="features" id="features">
+    <div class="container">
+      <h2>Why kb?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">▸</div>
+          <h3>CLI-First</h3>
+          <p>Manage tasks without leaving your terminal. Fast, scriptable, composable — fits naturally into your dev workflow.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">▸</div>
+          <h3>Web Dashboard</h3>
+          <p>Drag-and-drop board served from your machine. No cloud, no signup, no data leaving your computer.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">▸</div>
+          <h3>Single Rust Binary</h3>
+          <p>One file, zero runtime dependencies. Works on Windows, Linux, and macOS. <code class="mono">~5MB</code> on disk.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">▸</div>
+          <h3>Markdown Native</h3>
+          <p>Your board is a Markdown file with YAML frontmatter. Version control friendly, human readable, easy to edit.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"><hr></div>
+
+  <!-- Install -->
+  <section class="install" id="install">
+    <div class="container">
+      <h2>Install</h2>
+      <p class="subtitle">Get <span class="mono">kb</span> up and running in seconds.</p>
+      <div class="install-box">
+        <div class="install-tabs">
+          <button class="install-tab active" data-tab="cargo">Cargo</button>
+          <button class="install-tab" data-tab="windows">Windows</button>
+          <button class="install-tab" data-tab="binary">Binary</button>
+        </div>
+        <div class="install-code" id="installCode">
+          <button class="copy-btn" id="copyBtn">Copy</button>
+          <div id="installContent"></div>
+        </div>
+      </div>
+      <p class="install-note">
+        Also available on <a href="https://github.com/rayanbo/kanban/releases" target="_blank" rel="noopener">GitHub Releases</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="logo"><span>~</span>/kb</div>
+    <p>A personal project by <a href="https://github.com/rayanbo" target="_blank" rel="noopener">RayanBO</a></p>
+    <div class="links">
+      <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/rayanbo/kanban/releases" target="_blank" rel="noopener">Releases</a>
+    </div>
+    <div class="build-info">Built with Rust &middot; Open source (MIT)</div>
+  </footer>
+
+  <script>
+    // ── Terminal Typewriter ──
+
+    const TYPING_SPEED = 45;
+    const PAST_AFTER_CMD = 400;
+    const PAST_AFTER_OUTPUT = 200;
+    const LOOP_PAUSE = 3000;
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    async function typeText(el, text, speed) {
+      for (let i = 0; i < text.length; i++) {
+        el.textContent = text.slice(0, i + 1);
+        await sleep(speed + Math.random() * 40);
+      }
+    }
+
+    async function animateTerminal(container, commands, { loop = false } = {}) {
+      do {
+        for (const cmd of commands) {
+          const promptLine = document.createElement('div');
+          promptLine.className = 'terminal-line';
+          container.appendChild(promptLine);
+
+          const promptSpan = document.createElement('span');
+          promptSpan.className = 'terminal-prompt';
+          promptSpan.textContent = '❯ ';
+          promptLine.appendChild(promptSpan);
+
+          const cmdSpan = document.createElement('span');
+          cmdSpan.className = 'terminal-command';
+          promptLine.appendChild(cmdSpan);
+
+          await typeText(cmdSpan, cmd.cmd, TYPING_SPEED);
+
+          const cursor = document.createElement('span');
+          cursor.className = 'terminal-cursor';
+          promptLine.appendChild(cursor);
+
+          await sleep(PAST_AFTER_CMD);
+
+          cursor.remove();
+
+          if (cmd.outputs) {
+            for (const out of cmd.outputs) {
+              const outLine = document.createElement('div');
+              outLine.className = out.success ? 'terminal-output-success' : 'terminal-output';
+              outLine.textContent = out.text;
+              container.appendChild(outLine);
+              await sleep(PAST_AFTER_OUTPUT);
+            }
+          }
+
+          await sleep(PAST_AFTER_OUTPUT);
+        }
+
+        if (loop) {
+          await sleep(LOOP_PAUSE);
+          container.innerHTML = '';
+        }
+      } while (loop);
+    }
+
+    // ── Hero Terminal ──
+
+    const heroCommands = [
+      {
+        cmd: 'kb init',
+        outputs: [
+          { text: '  ✓ Initialized .kanban/', success: true }
+        ]
+      },
+      {
+        cmd: 'kb add "Ship v2.0" --priority high --to @rayan',
+        outputs: [
+          { text: '  ✓ Task added · #f7e2a1', success: true }
+        ]
+      },
+      {
+        cmd: 'kb list',
+        outputs: [
+          { text: '  TODO', success: false },
+          { text: '    Ship v2.0  ●●●  high', success: false }
+        ]
+      },
+      {
+        cmd: 'kb dashboard',
+        outputs: [
+          { text: '  ✓ Dashboard at http://localhost:5522', success: true }
+        ]
+      }
+    ];
+
+    const heroBody = document.getElementById('heroTerminalBody');
+
+    (async function startHero() {
+      await animateTerminal(heroBody, heroCommands, { loop: true });
+    })();
+
+    // ── Demo Terminal ──
+
+    const demoCommands = [
+      {
+        cmd: 'kb add "Design authentication" --priority high --to @rayan',
+        outputs: [
+          { text: '  ✓ Task added · #a1b2c3', success: true }
+        ]
+      },
+      {
+        cmd: 'kb add "Write API docs" --priority low',
+        outputs: [
+          { text: '  ✓ Task added · #d4e5f6', success: true }
+        ]
+      },
+      {
+        cmd: 'kb add "Fix memory leak" --priority high',
+        outputs: [
+          { text: '  ✓ Task added · #b7c8d9', success: true }
+        ]
+      },
+      {
+        cmd: 'kb move a1b2c3 in-progress',
+        outputs: [
+          { text: '  ✓ a1b2c3 → In Progress', success: true }
+        ]
+      },
+      {
+        cmd: 'kb assign b7c8d9 --to @rayan',
+        outputs: [
+          { text: '  ✓ Assigned to @rayan', success: true }
+        ]
+      },
+      {
+        cmd: 'kb status',
+        outputs: [
+          { text: '  ● 3 tasks · 1 in progress · 33% done', success: false }
+        ]
+      }
+    ];
+
+    const demoBody = document.getElementById('demoTerminalBody');
+
+    (async function startDemo() {
+      await sleep(1000);
+      await animateTerminal(demoBody, demoCommands, { loop: true });
+    })();
+
+    // ── Install Tabs ──
+
+    const installContent = {
+      cargo: `<span class="comment"># Install from source</span>
+<span class="prompt">$</span> <span class="cmd">cargo install kb</span>
+
+<span class="comment"># Or build directly from GitHub</span>
+<span class="prompt">$</span> <span class="cmd">cargo install --git https://github.com/rayanbo/kanban</span>`,
+
+      windows: `<span class="comment"># Windows (PowerShell)</span>
+<span class="prompt">$</span> <span class="cmd">powershell -c "irm https://raw.githubusercontent.com/rayanbo/kanban/main/install.ps1 | iex"</span>
+
+<span class="comment"># Or install via winget</span>
+<span class="prompt">$</span> <span class="cmd">winget install kb</span>`,
+
+      binary: `<span class="comment"># Download the latest binary for your platform</span>
+<span class="prompt">$</span> <span class="cmd">curl -sSfL https://github.com/rayanbo/kanban/releases/latest/download/kb-linux-x64 -o kb</span>
+<span class="prompt">$</span> <span class="cmd">chmod +x kb && ./kb</span>
+
+<span class="comment"># See all releases at github.com/rayanbo/kanban/releases</span>`
+    };
+
+    const installContentEl = document.getElementById('installContent');
+    let currentTab = 'cargo';
+    installContentEl.innerHTML = installContent.cargo;
+
+    document.querySelectorAll('.install-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+        installContentEl.innerHTML = installContent[currentTab];
+        document.getElementById('copyBtn').textContent = 'Copy';
+      });
+    });
+
+    // ── Copy Button ──
+
+    document.getElementById('copyBtn').addEventListener('click', async function() {
+      const text = installContent[currentTab].replace(/<[^>]*>/g, '').replace(/&gt;/g, '>');
+      try {
+        await navigator.clipboard.writeText(text.trim());
+        this.textContent = 'Copied!';
+        this.classList.add('copied');
+        setTimeout(() => {
+          this.textContent = 'Copy';
+          this.classList.remove('copied');
+        }, 2000);
+      } catch {
+        this.textContent = 'Failed';
+      }
+    });
+  </script>
+</body>
+</html>
