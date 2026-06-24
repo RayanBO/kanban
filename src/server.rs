@@ -1,6 +1,5 @@
 use std::net::TcpListener;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::path::Path;
 
 use axum::{
     body::Body,
@@ -14,7 +13,7 @@ use serde::Deserialize;
 use serde_json::json;
 use tower::service_fn;
 
-
+use crate::embed::DashboardAssets;
 use crate::models::{Priority, Status};
 use crate::store;
 
@@ -177,6 +176,39 @@ async fn api_trash_clean() -> impl IntoResponse {
     Json(json!({"ok": true})).into_response()
 }
 
+async fn api_config() -> impl IntoResponse {
+    match store::load_config() {
+        Ok(config) => Json(config).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
+    }
+}
+
+#[derive(Deserialize)]
+struct ConfigUpdateBody {
+    theme_dashboard: Option<String>,
+    use_trash: Option<bool>,
+}
+
+async fn api_config_update(Json(body): Json<ConfigUpdateBody>) -> impl IntoResponse {
+    let mut config = match store::load_config() {
+        Ok(c) => c,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
+    };
+    if let Some(theme) = body.theme_dashboard {
+        if theme != "dark" && theme != "light" {
+            return (StatusCode::BAD_REQUEST, Json(json!({"error": "theme invalide"}))).into_response();
+        }
+        config.theme_dashboard = theme;
+    }
+    if let Some(use_trash) = body.use_trash {
+        config.use_trash = use_trash;
+    }
+    if let Err(e) = store::save_config(&config) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
+    }
+    Json(json!({"ok": true})).into_response()
+}
+
 pub fn find_port(start: u16) -> u16 {
     let mut p = start;
     loop {
@@ -190,7 +222,7 @@ pub fn find_port(start: u16) -> u16 {
     }
 }
 
-pub async fn run_server(port: u16, dashboard_dir: PathBuf) -> Result<(), String> {
+pub async fn run_server(port: u16) -> Result<(), String> {
     let api = Router::new()
         .route("/data", get(api_data))
         .route("/move", post(api_move))
@@ -199,60 +231,57 @@ pub async fn run_server(port: u16, dashboard_dir: PathBuf) -> Result<(), String>
         .route("/folder", get(api_folder))
         .route("/init", post(api_init))
         .route("/trash-restore", post(api_trash_restore))
-        .route("/trash-clean", post(api_trash_clean));
-
-    let dir = Arc::new(dashboard_dir);
-
-    let index_html = Arc::new(
-        std::fs::read_to_string(dir.join("index.html"))
-            .unwrap_or_default()
-    );
+        .route("/trash-clean", post(api_trash_clean))
+        .route("/config", get(api_config).post(api_config_update));
 
     let app = Router::new()
         .nest("/api", api)
-        .fallback_service(service_fn(move |req: axum::http::Request<Body>| {
-            let dir = dir.clone();
-            let idx = index_html.clone();
-            async move {
-                let uri = req.uri().clone();
-                let path = uri.path().trim_start_matches('/');
-                let file_path = if path.is_empty() { dir.join("index.html") } else { dir.join(path) };
+        .fallback_service(service_fn(|req: axum::http::Request<Body>| async move {
+            let path = req.uri().path().trim_start_matches('/');
+            let path = if path.is_empty() || path == "index.html" {
+                "index.html"
+            } else {
+                path
+            };
 
-                let result: Result<Response<Body>, std::convert::Infallible> = match std::fs::read(&file_path) {
-                    Ok(bytes) => {
-                        let ct = guess_ct(&file_path);
+            let result: Result<Response<Body>, std::convert::Infallible> =
+                match DashboardAssets::get(path) {
+                    Some(asset) => {
+                        let ct = guess_ct(path);
                         Ok(Response::builder()
                             .status(StatusCode::OK)
                             .header(axum::http::header::CONTENT_TYPE, ct)
-                            .body(Body::from(bytes))
+                            .body(Body::from(asset.data.to_vec()))
                             .unwrap())
                     }
-                    Err(_) => {
-                        Ok(Response::builder()
-                            .status(StatusCode::OK)
-                            .header(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")
-                            .body(Body::from(idx.as_ref().clone()))
-                            .unwrap())
+                    None => {
+                        match DashboardAssets::get("index.html") {
+                            Some(asset) => Ok(Response::builder()
+                                .status(StatusCode::OK)
+                                .header(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+                                .body(Body::from(asset.data.to_vec()))
+                                .unwrap()),
+                            None => Ok((StatusCode::NOT_FOUND, "Not Found").into_response()),
+                        }
                     }
                 };
-                result
-            }
+            result
         }));
 
     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port))
         .await
         .map_err(|e| format!("Port {port}: {e}"))?;
 
-    let url = format!("http://localhost:{}", port);
-    println!("  Serveur lancé sur {}", url);
+    println!("  Serveur lancé sur http://localhost:{}", port);
 
     axum::serve(listener, app)
         .await
         .map_err(|e| format!("Serveur: {e}"))
 }
 
-fn guess_ct(path: &Path) -> &'static str {
-    match path.extension().and_then(|e| e.to_str()) {
+fn guess_ct(path: &str) -> &'static str {
+    let p = Path::new(path);
+    match p.extension().and_then(|e| e.to_str()) {
         Some("html") => "text/html; charset=utf-8",
         Some("css") => "text/css; charset=utf-8",
         Some("js") => "application/javascript; charset=utf-8",

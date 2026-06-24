@@ -1,24 +1,25 @@
 # Kanban CLI + Dashboard — Project Context
 
 ## Overview
-Kanban task manager: Rust CLI (`kb`) + Next.js web dashboard. Stockage dans `.kanban/kanban.md` (YAML frontmatter + Markdown tables).
+Kanban task manager: Rust CLI (`kb`) + HTML/CSS/JS web dashboard. Stockage dans `.kanban/kanban.md` (YAML frontmatter + Markdown tables). Dashboard est **embarqué dans le binaire** via `rust-embed` — zéro fichier à copier.
 
 ## Architecture
 ```
 kb (Rust CLI) ←→ .kanban/kanban.md (YAML+Markdown)
-                  ↕ Rust HTTP server (axum, built into kb CLI)
-                    ↕ Built static dashboard (dashboard/out/)
+                  ↕ Rust HTTP server (axum, intégré dans kb CLI)
+                    ↕ Dashboard HTML/CSS/JS embarqué (rust-embed)
 ```
-Dashboard is a Next.js static export (SSG), built once at dev time. `kb dashboard` spawns a Rust HTTP server (axum) that serves static files + handles API directly. No Node.js/npx runtime dependency.
+Dashboard est un simple fichier HTML + CSS + JS vanilla, **embarqué dans le binaire** à la compilation. `kb dashboard` lance un serveur Rust (axum) qui sert les fichiers embarqués + gère l'API directement. Aucune dépendance Node.js/npm.
 
 ## Project Structure
 ```
 kanban/
 ├── src/
 │   ├── main.rs                  # CLI entry, clap commands
+│   ├── embed.rs                 # rust-embed: DashboardAssets struct (embarque dashboard/)
 │   ├── models.rs                # Task, User, Store, Config, Status, Priority
 │   ├── store.rs                 # load/save kanban.md, config
-│   ├── server.rs                # Rust HTTP server (axum): API + static file serving
+│   ├── server.rs                # Rust HTTP server (axum): API + embedded files
 │   └── commands/
 │       ├── mod.rs
 │       ├── add.rs               # kb add <title> -p <prio> --to <users>
@@ -27,22 +28,17 @@ kanban/
 │       ├── data.rs              # kb data (JSON dump)
 │       ├── del.rs               # kb del <id>
 │       ├── init.rs              # kb init (interactive + flags)
-│       ├── install.rs           # kb install (Windows PATH + dashboard copy)
+│       ├── install.rs           # kb install (Windows PATH)
 │       ├── list.rs              # kb list [-p] [-s]
 │       ├── move_task.rs         # kb move <id> <status>
 │       ├── status.rs            # kb status (KPIs)
 │       ├── trash.rs             # kb trash [--restore] [--clean-all]
 │       └── user.rs              # kb user add/put/del/show
-├── dashboard/                   # Next.js app (shadcn/ui, Tabler Icons) — built to out/
-│   ├── app/
-│   │   ├── layout.tsx           # Root layout (Geist fonts, dark support)
-│   │   ├── globals.css          # Tailwind v4 + shadcn theme
-│   │   └── page.tsx             # Kanban board (3 columns, drag&drop, trash)
-│   ├── components/ui/           # shadcn components (badge, button, card, dialog, select, avatar)
-│   ├── lib/utils.ts             # cn() utility
-│   ├── public/favicon.svg       # Kanban board icon
-│   └── components.json          # shadcn config (radix-mira style)
-├── Cargo.toml                   # version 1.0.2
+├── dashboard/                   # HTML/CSS/JS vanilla — embarqué dans le binaire
+│   ├── index.html               # Structure HTML + JS inline (drag & drop, modals, state)
+│   ├── style.css                # Tous les styles (CSS variables, themes, responsive)
+│   └── fonts/                   # Polices auto-hébergées (woff2)
+├── Cargo.toml                   # version 1.1.0
 └── README.md
 ```
 
@@ -72,11 +68,10 @@ struct Store { tasks: Vec<Task>, users: Vec<User> }
 ## CLI Commands
 | Command | Description |
 |---|---|
-| `kb install` | Copy binary to `%LOCALAPPDATA%\Programs\kb\`, add to PATH, copy dashboard/ |
-| `kb init` | Interactive init (Y/n), creates `.kanban/` + scripts |
+| `kb install` | Copy binary to `%LOCALAPPDATA%\Programs\kb\`, add to PATH |
+| `kb init` | Interactive init (Y/n), creates `.kanban/` |
 | `kb init --use-trash` | Enable trash (default) |
-| `kb init --no-init-dashboard` | Skip dashboard scripts |
-| `kb dashboard` | Launch web UI (detects DEV/PROD mode) |
+| `kb dashboard` | Launch web UI (serveur Rust intégré) |
 | `kb add <title> -p <prio> --to <ids>` | Add task, returns UUID |
 | `kb list [-p <prio>] [-s <status>]` | List tasks (excludes trash) |
 | `kb move <id> <status>` | Change task status |
@@ -88,58 +83,48 @@ struct Store { tasks: Vec<Task>, users: Vec<User> }
 
 ## Dashboard Details
 - Port: 5522 (auto-increment if busy)
-- Rust HTTP server (axum) handles both static files and API — no Node.js/npx at runtime
-- Static files served via `service_fn` fallback, SPA fallback serves `index.html` for unmatched routes
-- Background: runs in current process (no extra window), killed via process manager
-- Theme: dark by default, toggle persisted in localStorage(`kb-theme`)
-- Fonts: Geist (sans), Geist Mono (mono), Noto Sans (headings)
-- CSS: Tailwind v4 `@theme inline` with CSS variables
-- `--font-sans` maps to `--font-geist-sans` (NOT self-reference)
+- Serveur Rust (axum) gère fichiers statiques + API — pas de Node.js/npm
+- Fichiers embarqués dans le binaire via `rust-embed` → zéro fichier à copier
+- SPA fallback : les chemins inconnus servent `index.html`
+- Thème dark/light, persisté dans localStorage(`kb-theme`)
+- Polices : Average Sans (corps), Lily Script One (titres)
+- Pas de build nécessaire — simple HTML/CSS/JS vanilla
 
 ### Dashboard Features
-- 3 columns: À faire / En cours / Terminé
-- Drag & drop cards between columns (HTML5 Drag API)
-- Priority badges (low=green, medium=amber, high=rose)
-- User avatars on cards
-- Add task dialog with title, priority, user assignment
-- Delete card (to trash)
-- Trash bin: FAB bottom-right, accepts drops, dialog with restore/clean
-- Not-initialized screen with init button
-- Page title: `Kanban {folder}` (dynamic)
-- Favicon: SVG kanban board icon
+- 3 colonnes : À faire / En cours / Terminé
+- Drag & drop cards entre colonnes (HTML5 Drag API)
+- Badges priorité (low=green, medium=amber, high=rose)
+- Avatars utilisateurs sur les cartes
+- Ajout tâche : modal avec titre, priorité, assignation multiple
+- Corbeille : FAB bottom-right, accepte drops, dialogue avec restore/clean
+- Recherche instantanée (titre, personne, statut, priorité)
+- Hero modal pour les détails de tâche
+- Footer repliable avec liste horizontale des tâches
+- Responsive (3 colonnes > 900px, 1 colonne ≤ 900px)
 
 ### API Routes
-All routes are handled by Rust handlers in `src/server.rs` (no exec/subprocess).
-| Route | Method | Description |
+Toutes les routes sont gérées par les handlers Rust dans `src/server.rs`.
+| Route | Méthode | Description |
 |---|---|---|
 | `/api/data` | GET | `kb data` JSON |
 | `/api/move` | POST `{id, status}` | `kb move` |
 | `/api/add` | POST `{title, priority, assigned_to}` | `kb add` |
 | `/api/del` | POST `{id}` | `kb del` |
-| `/api/folder` | GET | Returns `{folder}` name |
-| `/api/init` | POST | `kb init --use-trash=true --no-init-dashboard` |
+| `/api/folder` | GET | Retourne `{folder}` |
+| `/api/init` | POST | `kb init` |
 | `/api/trash-restore` | POST `{id}` | `kb trash --restore` |
 | `/api/trash-clean` | POST | `kb trash --clean-all` |
 
 ## Key Design Decisions
 - `.kanban/` subdir (not root) for cleanliness
-- `#[serde(default)]` on `is_trash` for backward compat
-- Banner uses Unicode box drawing (no ANSI codes) for multi-terminal reliability
-- Logo KANBAN in ASCII blocks (█) — no emoji in logo
-- Padding uses `chars().take(w)` for safe Unicode (no byte slicing)
-- `emoji_w()` handles U+1F000–U+1FFFF, U+2699, U+2705, U+2795, U+2796 as double-width
-- Dashboard dir: checks `./dashboard/` first, then `<install_dir>/dashboard/`
-- PROD build auto-runs `npx next build` if `.next/` missing
-- Dashboard scripts (`.kanban/dashboard.bat`/`.sh`) launch `kb dashboard`
+- Dashboard embarqué dans le binaire — marche partout sans copier de fichiers
+- `#[serde(default)]` sur `is_trash` pour backward compat
+- Aucune dépendance externe pour le dashboard (HTML/CSS/JS vanilla)
+- Les fichiers du dashboard sont inclus à la compilation via `rust-embed`
+- Le mode `no_init_dashboard` est conservé pour compatibilité mais ne fait rien
 
 ## Version
-Current: 1.0.2
+Current: 1.2.0
 
 ## To Do
-- `kb notif` — notification for assigned users
-
-## Version
-Current: 1.0.2
-
-## To Do
-- `kb notif` — notification for assigned users
+- Lier l'API réelle au dashboard (au lieu des données mock)

@@ -1,31 +1,17 @@
 use std::env;
-use std::path::PathBuf;
 
-use crate::commands::install::install_dir;
 use crate::server;
 use crate::store::is_initialized;
 
-fn resolve_dashboard_dir() -> Option<PathBuf> {
-    let local = PathBuf::from("dashboard").join("out");
-    if local.exists() && local.is_dir() {
-        return Some(local);
-    }
-    let installed = install_dir().join("dashboard");
-    if installed.exists() && installed.is_dir() {
-        return Some(installed);
-    }
-    let kanban_dash = PathBuf::from(".kanban").join("dashboard");
-    if kanban_dash.exists() && kanban_dash.is_dir() {
-        return Some(kanban_dash);
-    }
-    None
-}
-
 fn emoji_w(c: char) -> usize {
     let u = c as u32;
-    if u >= 0x1F000 && u <= 0x1FFFF { 2 }
-    else if u == 0x2699 || u == 0x2705 || u == 0x2795 || u == 0x2796 { 2 }
-    else { 1 }
+    if u >= 0x1F000 && u <= 0x1FFFF {
+        2
+    } else if u == 0x2699 || u == 0x2705 || u == 0x2795 || u == 0x2796 {
+        2
+    } else {
+        1
+    }
 }
 
 fn vis_width(s: &str) -> usize {
@@ -40,17 +26,24 @@ fn pad_to(s: &str, w: usize) -> String {
         let mut v = 0;
         for c in clean.chars() {
             let cw = emoji_w(c);
-            if v + cw > w { break; }
+            if v + cw > w {
+                break;
+            }
             out.push(c);
             v += cw;
         }
-        while v < w { out.push(' '); v += 1; }
+        while v < w {
+            out.push(' ');
+            v += 1;
+        }
         out
     } else {
         let need = w - vw;
         let mut out = String::with_capacity(clean.len() + need);
         out.push_str(&clean);
-        for _ in 0..need { out.push(' '); }
+        for _ in 0..need {
+            out.push(' ');
+        }
         out
     }
 }
@@ -88,7 +81,7 @@ fn banner(url: &str) {
     sp();
     println!("{}", line(&format!("    📁  {}", folder)));
     println!("{}", line(&format!("    🔗  {}", url)));
-    println!("{}", line("    ⚙  Serveur Rust"));
+    println!("{}", line("    ⚙   Serveur Rust"));
     sp();
     println!("{}", line("    Appuie sur Entrée pour quitter"));
     sp();
@@ -101,18 +94,12 @@ pub fn run() -> Result<(), String> {
         return Err("Aucun projet Kanban ici. Exécute 'kb init' d'abord.".to_string());
     }
 
-    let dashboard_dir = resolve_dashboard_dir()
-        .ok_or_else(|| "Dossier dashboard introuvable.\n  Exécute 'kb install' ou copie 'dashboard/out/' depuis le dépôt.".to_string())?
-        .canonicalize()
-        .map_err(|e| format!("Chemin dashboard invalide: {e}"))?;
-
     let port = server::find_port(5522);
     let url = format!("http://localhost:{}", port);
 
     banner(&url);
 
-    let rt = tokio::runtime::Runtime::new()
-        .map_err(|e| format!("Échec du runtime: {e}"))?;
+    let rt = tokio::runtime::Runtime::new().map_err(|e| format!("Échec du runtime: {e}"))?;
 
-    rt.block_on(server::run_server(port, dashboard_dir))
+    rt.block_on(server::run_server(port))
 }

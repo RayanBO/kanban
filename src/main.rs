@@ -1,6 +1,7 @@
 use clap::{CommandFactory, Parser, Subcommand};
 
 mod commands;
+mod embed;
 mod models;
 mod server;
 mod store;

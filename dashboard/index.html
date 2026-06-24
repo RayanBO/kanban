@@ -3,7 +3,9 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Kanban — dashboard-v2</title>
+        <!-- favicon -->
+        <link rel="icon" href="/favicon.svg" />
+        <title>Kanban</title>
         <link rel="stylesheet" href="style.css?v=2" />
     </head>
     <body>
@@ -214,6 +216,25 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <div
+                        class="setting-row"
+                        style="
+                            padding: 0 0 12px 0;
+                            border-bottom: 1px solid var(--border);
+                            margin-bottom: 12px;
+                        "
+                    >
+                        <div>
+                            <div class="setting-label">Corbeille activée</div>
+                            <div class="setting-desc">
+                                Les tâches supprimées vont dans la corbeille
+                            </div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="trashToggle" />
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
                     <div id="trashList"></div>
                     <button
                         class="btn btn-danger btn-sm"
@@ -241,94 +262,68 @@
         </div>
 
         <script>
-            const USERS = [
-                { id: "u1", name: "Alice", color: "#6366f1" },
-                { id: "u2", name: "Bob", color: "#22c55e" },
-                { id: "u3", name: "Charlie", color: "#f59e0b" },
-                { id: "u4", name: "Diana", color: "#ef4444" },
+            const COLORS = [
+                "#6366f1",
+                "#22c55e",
+                "#f59e0b",
+                "#ef4444",
+                "#8b5cf6",
+                "#06b6d4",
+                "#f43f5e",
+                "#84cc16",
             ];
-
-            let TASKS = [
-                {
-                    id: "t1",
-                    title: "Concevoir le dashboard analytics",
-                    priority: "high",
-                    status: "todo",
-                    assigned: ["u1"],
-                },
-                {
-                    id: "t2",
-                    title: "Implémenter le drag & drop",
-                    priority: "high",
-                    status: "done",
-                    assigned: ["u2", "u3"],
-                },
-                {
-                    id: "t3",
-                    title: "Ajouter le mode sombre",
-                    priority: "medium",
-                    status: "done",
-                    assigned: ["u1"],
-                },
-                {
-                    id: "t4",
-                    title: "Écrire les tests unitaires",
-                    priority: "medium",
-                    status: "todo",
-                    assigned: ["u4"],
-                },
-                {
-                    id: "t5",
-                    title: "Configurer le CI/CD",
-                    priority: "low",
-                    status: "in-progress",
-                    assigned: ["u2"],
-                },
-                {
-                    id: "t6",
-                    title: "Optimiser les images",
-                    priority: "low",
-                    status: "todo",
-                    assigned: [],
-                },
-                {
-                    id: "t7",
-                    title: "Corriger le bug de défilement",
-                    priority: "high",
-                    status: "in-progress",
-                    assigned: ["u3", "u4"],
-                },
-                {
-                    id: "t8",
-                    title: "Mettre à jour la documentation",
-                    priority: "medium",
-                    status: "todo",
-                    assigned: ["u1"],
-                },
-                {
-                    id: "t9",
-                    title: "Refonte de la page de connexion",
-                    priority: "low",
-                    status: "done",
-                    assigned: ["u2"],
-                },
-                {
-                    id: "t10",
-                    title: "Ajouter les notifications push",
-                    priority: "medium",
-                    status: "in-progress",
-                    assigned: ["u4"],
-                },
-                {
-                    id: "t11",
-                    title: "Audit de performance Lighthouse",
-                    priority: "high",
-                    status: "todo",
-                    assigned: ["u1", "u2", "u3"],
-                },
-            ];
+            let TASKS = [];
             let TRASH = [];
-            let nextId = 12;
+            let USERS = [];
+            let useTrash = true;
+
+            async function apiJson(path, opts) {
+                const r = await fetch(path, opts);
+                if (!r.ok) throw new Error(r.statusText);
+                return r.json();
+            }
+
+            function mapApiTask(t) {
+                return {
+                    id: t.id,
+                    title: t.title,
+                    priority: t.priority,
+                    status: t.status,
+                    assigned: t.assigned_to || [],
+                };
+            }
+
+            async function loadData() {
+                const [data, config] = await Promise.all([
+                    apiJson("/api/data"),
+                    apiJson("/api/config").catch(() => null),
+                ]);
+                USERS = (data.users || []).map((u, i) => ({
+                    id: u.id,
+                    name: u.username,
+                    color: COLORS[i % COLORS.length],
+                }));
+                TASKS = (data.tasks || [])
+                    .filter((t) => !t.is_trash)
+                    .map(mapApiTask);
+                TRASH = (data.tasks || [])
+                    .filter((t) => t.is_trash)
+                    .map(mapApiTask);
+                if (config && !localStorage.getItem("kb-theme")) {
+                    applyTheme(
+                        config.theme_dashboard === "light" ? "light" : "dark",
+                    );
+                }
+                if (config) {
+                    useTrash = config.use_trash !== false;
+                    document.getElementById("fab").style.display = useTrash
+                        ? ""
+                        : "none";
+                    document.getElementById("trashToggle").checked = useTrash;
+                    updateTrashToggleLabel();
+                }
+                render();
+            }
 
             function render() {
                 renderBoard();
@@ -482,30 +477,35 @@
                 }
             });
 
-            function deleteTask(id) {
-                const idx = TASKS.findIndex((t) => t.id === id);
-                if (idx === -1) return;
-                const [task] = TASKS.splice(idx, 1);
-                TRASH.push(task);
-                render();
-            }
-
-            function moveTask(id, status) {
-                const task = TASKS.find((t) => t.id === id);
-                if (!task) return;
-                task.status = status;
-                render();
-            }
-
-            function addTask(title, priority, assigned) {
-                TASKS.push({
-                    id: "t" + nextId++,
-                    title,
-                    priority,
-                    status: "todo",
-                    assigned,
+            async function deleteTask(id) {
+                await apiJson("/api/del", {
+                    method: "POST",
+                    body: JSON.stringify({ id }),
+                    headers: { "Content-Type": "application/json" },
                 });
-                render();
+                await loadData();
+            }
+
+            async function moveTask(id, status) {
+                await apiJson("/api/move", {
+                    method: "POST",
+                    body: JSON.stringify({ id, status }),
+                    headers: { "Content-Type": "application/json" },
+                });
+                await loadData();
+            }
+
+            async function addTask(title, priority, assigned) {
+                await apiJson("/api/add", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        title,
+                        priority,
+                        assigned_to: assigned,
+                    }),
+                    headers: { "Content-Type": "application/json" },
+                });
+                await loadData();
             }
 
             function openModal(id) {
@@ -579,29 +579,71 @@
                 .addEventListener("click", () => closeModal("trashModal"));
             document
                 .getElementById("trashCleanAll")
-                .addEventListener("click", () => {
-                    TRASH = [];
-                    renderTrashList();
+                .addEventListener("click", async () => {
+                    await apiJson("/api/trash-clean", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                    });
+                    await loadData();
                 });
 
-            function restoreTask(id) {
-                const idx = TRASH.findIndex((t) => t.id === id);
-                if (idx === -1) return;
-                const [task] = TRASH.splice(idx, 1);
-                TASKS.push(task);
-                render();
+            function updateTrashToggleLabel() {
+                const row = document.querySelector(
+                    ".setting-row .setting-label",
+                );
+                const desc = document.querySelector(
+                    ".setting-row .setting-desc",
+                );
+                if (useTrash) {
+                    row.textContent = "Corbeille activée";
+                    desc.textContent =
+                        "Les tâches supprimées vont dans la corbeille";
+                } else {
+                    row.textContent = "Corbeille désactivée";
+                    desc.textContent =
+                        "Les tâches supprimées le sont définitivement";
+                }
+            }
+
+            document
+                .getElementById("trashToggle")
+                .addEventListener("change", async (e) => {
+                    useTrash = e.target.checked;
+                    document.getElementById("fab").style.display = useTrash
+                        ? ""
+                        : "none";
+                    updateTrashToggleLabel();
+                    renderTrashList();
+                    await apiJson("/api/config", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ use_trash: useTrash }),
+                    });
+                });
+
+            async function restoreTask(id) {
+                await apiJson("/api/trash-restore", {
+                    method: "POST",
+                    body: JSON.stringify({ id }),
+                    headers: { "Content-Type": "application/json" },
+                });
+                await loadData();
             }
 
             function renderTrashList() {
                 const list = document.getElementById("trashList");
+                document.getElementById("trashCleanAll").style.display =
+                    useTrash && TRASH.length ? "" : "none";
+                if (!useTrash) {
+                    list.innerHTML =
+                        '<div class="trash-empty">Mode corbeille désactivé — les tâches supprimées le sont définitivement.</div>';
+                    return;
+                }
                 if (!TRASH.length) {
                     list.innerHTML =
                         '<div class="trash-empty">La corbeille est vide</div>';
-                    document.getElementById("trashCleanAll").style.display =
-                        "none";
                     return;
                 }
-                document.getElementById("trashCleanAll").style.display = "";
                 list.innerHTML = TRASH.map(
                     (t) => `
     <div class="trash-item">
@@ -619,26 +661,37 @@
                 });
             }
 
+            function applyTheme(theme) {
+                document.documentElement.setAttribute("data-theme", theme);
+            }
+
             function initTheme() {
                 const stored = localStorage.getItem("kb-theme");
                 const prefersDark = window.matchMedia(
                     "(prefers-color-scheme: dark)",
                 ).matches;
                 const theme = stored || (prefersDark ? "dark" : "light");
-                document.documentElement.setAttribute("data-theme", theme);
+                applyTheme(theme);
             }
 
             initTheme();
 
             document
                 .getElementById("themeToggle")
-                .addEventListener("click", () => {
+                .addEventListener("click", async () => {
                     const html = document.documentElement;
                     const current = html.getAttribute("data-theme");
                     const next = current === "dark" ? "light" : "dark";
                     html.classList.add("theme-transitioning");
-                    html.setAttribute("data-theme", next);
+                    applyTheme(next);
                     localStorage.setItem("kb-theme", next);
+                    try {
+                        await fetch("/api/config", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ theme_dashboard: next }),
+                        });
+                    } catch (_) {}
                     setTimeout(
                         () => html.classList.remove("theme-transitioning"),
                         350,

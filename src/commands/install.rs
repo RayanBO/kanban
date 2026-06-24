@@ -2,7 +2,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 pub fn install_dir() -> PathBuf {
-    Path::new(&env::var("LOCALAPPDATA").unwrap_or_default())
+    PathBuf::from(env::var("LOCALAPPDATA").unwrap_or_default())
         .join("Programs")
         .join("kb")
 }
@@ -69,18 +69,6 @@ pub fn run() -> Result<(), String> {
 
     let dest = dir.join("kb.exe");
     std::fs::copy(&exe, &dest).map_err(|e| format!("Copie échouée: {e}"))?;
-
-    // Copier le dashboard built (dashboard/out/) s'il existe à côté du binaire
-    let exe_dir = exe.parent().unwrap_or(Path::new("."));
-    let src_dash_out = exe_dir.join("..").join("..").join("dashboard").join("out");
-    let src_dash_out = std::fs::canonicalize(&src_dash_out).unwrap_or(src_dash_out);
-    if src_dash_out.exists() && src_dash_out.is_dir() && src_dash_out.join("index.html").exists() {
-        let dst_dashboard = dir.join("dashboard");
-        if !dst_dashboard.exists() {
-            copy_dir_recursive(&src_dash_out, &dst_dashboard)?;
-            println!("  Dashboard copié → {}", dst_dashboard.display());
-        }
-    }
 
     let user_path = env::var("Path").unwrap_or_default();
     let dir_str = dir.to_string_lossy().to_string();
@@ -170,24 +158,4 @@ fn banner(path: &Path, path_updated: bool) {
 #[cfg(not(windows))]
 pub fn run() -> Result<(), String> {
     Err("Installation auto disponible uniquement sur Windows.".to_string())
-}
-
-fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
-    if !dst.exists() {
-        std::fs::create_dir_all(dst).map_err(|e| format!("Création dossier {dst:?}: {e}"))?;
-    }
-    for entry in std::fs::read_dir(src).map_err(|e| format!("Lecture {src:?}: {e}"))? {
-        let entry = entry.map_err(|e| format!("Entrée: {e}"))?;
-        let path = entry.path();
-        let name = entry.file_name();
-        let dest = dst.join(&name);
-        if path.is_dir() {
-            if name != "node_modules" && name != ".next" {
-                copy_dir_recursive(&path, &dest)?;
-            }
-        } else {
-            std::fs::copy(&path, &dest).map_err(|e| format!("Copie {name:?}: {e}"))?;
-        }
-    }
-    Ok(())
 }
