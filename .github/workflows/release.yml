@@ -71,7 +71,7 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: bash
         run: |
-          cargo wix build --target x86_64-pc-windows-msvc --nocapture
+          cargo wix build --nocapture -B target/x86_64-pc-windows-msvc/release/kb.exe
           cp target/wix/*.msi kb-windows-x64.msi
 
       - name: Upload artifact
