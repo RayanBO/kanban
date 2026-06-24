@@ -1,16 +1,19 @@
-# kanban cli
+# kb — Kanban CLI
 
-CLI Kanban builder with Rust + embedded HTML/CSS/JS dashboard.
+**kb** is a portable Kanban board that lives in your terminal. Built with Rust, it ships as a single binary — no dependencies, no database, no cloud. When you need visuals, `kb dashboard` starts an embedded web server with a drag-and-drop board.
 
-🌐 Landing page: [https://rayanbo.github.io/kanban/](https://rayanbo.github.io/kanban/)
+🌐 Landing page: [https://rayanbo.github.io/kanban/](https://rayanbo.github.io/kanban/)  
+📦 License: [MIT](LICENSE)
+
+---
 
 ## Architecture
 
-```text
+```
 kb (Rust CLI)
-  -> .kanban/kanban.md (YAML frontmatter + Markdown tables)
-  -> Rust HTTP server (axum)
-  -> embedded dashboard (rust-embed, no Node/npm)
+  → .kanban/kanban.md (YAML frontmatter + Markdown tables)
+  → Rust HTTP server (axum)
+  → embedded dashboard (rust-embed, no Node/npm)
 ```
 
 The dashboard is shipped inside the `kb` binary. `kb dashboard` starts the Rust server and serves both the UI assets and the JSON API.
@@ -19,13 +22,15 @@ The dashboard is shipped inside the `kb` binary. `kb dashboard` starts the Rust 
 
 Project data lives in `.kanban/`:
 
-```text
+```
 .kanban/
 ├── kanban.md
 └── kb-config.yaml
 ```
 
-## Commands
+Every task, user, and config change is written directly to disk — no external database required.
+
+## CLI Commands
 
 ```bash
 kb init [--use-trash] [--no-init-dashboard]
@@ -49,19 +54,19 @@ kb status
 kb data [--to-file path/data.json]
 ```
 
-## Dashboard
+## Web Dashboard
 
 - 3 columns: À faire / En cours / Terminé
 - Drag & drop cards between columns
 - Add task modal with multi-user assignment
-- Mini user manager modal
-- Existing task assignment edit in task detail modal
-- Trash drawer + restore / clean all
+- User manager modal (create, edit, delete)
+- Inline task assignment editing from the detail view
+- Trash drawer with restore and clean-all
 - Search by title, user, status, priority
-- Dark/light theme persisted in `localStorage`
-- Responsive layout, no build step
+- Dark and light themes, persisted in `localStorage`
+- Fully responsive — works on desktop and mobile
 
-## API
+## HTTP API
 
 | Route | Method | Purpose |
 |---|---|---|
@@ -76,15 +81,22 @@ kb data [--to-file path/data.json]
 | `/api/trash-restore` | POST | Restore task from trash |
 | `/api/trash-clean` | POST | Empty trash |
 
-## Build
+## Build from Source
 
 ```powershell
 cargo build
 cargo build --release
 ```
 
+Requires Rust (install via [rustup](https://rustup.rs/)). The `kb` binary lands in `target/release/`.
+
 ## Notes
 
-- Dashboard assets are embedded at compile time.
-- `kb assign` exists for CLI parity with dashboard assignment editing.
-- `delete_user` also removes deleted users from task assignments.
+- Dashboard assets are embedded at compile time via `rust-embed`. No npm, no build step.
+- `kb assign` mirrors the assignment editing available in the dashboard.
+- Deleting a user also removes them from all task assignments.
+- Task data is stored as a Markdown file with YAML frontmatter — version-control friendly and human readable.
+
+---
+
+Built by [Rayan Rav](https://rayan-rav.web.app/) · Open source under the MIT License.

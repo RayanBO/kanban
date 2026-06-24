@@ -2,7 +2,7 @@
 /target
 Cargo.lock.bak
 
-# Binaires compilés
+# Compiled Binairy
 /build/
 *.exe
 *.pdb
@@ -10,16 +10,15 @@ Cargo.lock.bak
 *.so
 *.dylib
 
-# Artifacts GitHub Actions (si build local)
+# Artifact GitHub Actions (if local build)
 kb-windows-x64.exe
 kb-linux-x64
 kb-macos-arm64
 kb-macos-x64
 
-# Données kanban locales (chaque utilisateur a les siennes)
 .kanban/
 
-# Éditeurs
+# Editors
 .vscode/
 .idea/
 *.swp
