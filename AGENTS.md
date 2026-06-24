@@ -128,7 +128,7 @@ Toutes les routes sont gérées par les handlers Rust dans `src/server.rs`.
 - Le mode `no_init_dashboard` est conservé pour compatibilité mais ne fait rien
 
 ## Version
-Current: 1.2.0
+Current: 1.2.1
 
 ## To Do
 - Dashboard branché sur API réelle pour tasks + users

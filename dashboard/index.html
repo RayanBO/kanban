@@ -1255,7 +1255,7 @@
                 return d.innerHTML;
             }
 
-            render();
+            loadData().catch((err) => console.error("Dashboard load failed:", err));
         </script>
     </body>
 </html>
