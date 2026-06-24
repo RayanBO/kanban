@@ -1,4 +1,5 @@
 pub mod add;
+pub mod assign;
 pub mod config;
 pub mod dashboard;
 pub mod data;

@@ -1,163 +1,88 @@
 # kanban cli
 
-CLI Kanban builder avec Rust + Dashboard web Next.js.
+CLI Kanban builder with Rust + embedded HTML/CSS/JS dashboard.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    kb (Rust CLI)                     │
-│  init · add · list · move · del · trash · dashboard │
-└──────────┬──────────────────────────────────────────┘
-           │ lit/écrit
-           ▼
-┌────────────────────┐
-│  .kanban/          │ ← stockage fichier unique
-│  └── kanban.md     │   (YAML + Markdown)
-└────────────────────┘
-           ▲
-┌──────────┴──────────────────────────────────────────┐
-│            Dashboard (Next.js + shadcn)              │
-│  Page Kanban · API routes → exec kb CLI             │
-│  Dark/light · Drag & drop · Corbeille               │
-└─────────────────────────────────────────────────────┘
+```text
+kb (Rust CLI)
+  -> .kanban/kanban.md (YAML frontmatter + Markdown tables)
+  -> Rust HTTP server (axum)
+  -> embedded dashboard (rust-embed, no Node/npm)
 ```
 
-Le CLI écrit les données dans `.kanban/kanban.md` (frontmatter YAML + tables Markdown).
-Le dashboard Next.js lit/écrit via les API routes qui appellent le binaire `kb`.
+The dashboard is shipped inside the `kb` binary. `kb dashboard` starts the Rust server and serves both the UI assets and the JSON API.
 
----
+## Storage
 
-## Stockage
+Project data lives in `.kanban/`:
 
-Dossier `.kanban/` créé dans le dossier courant par `kb init`.
-
-```
+```text
 .kanban/
-├── kanban.md          # données (YAML frontmatter + tables Markdown)
-├── kb-config.yaml     # configuration
-├── dashboard.bat      # lanceur Windows → kb dashboard
-└── dashboard.sh       # lanceur Unix → kb dashboard
+├── kanban.md
+└── kb-config.yaml
 ```
 
----
-
-## Commandes
+## Commands
 
 ```bash
-# --- Installation ---
-
-# Installer kb dans le PATH (Windows)
-kb install
-# → copie le binaire + ajoute au PATH utilisateur
-# Ouvre un nouveau terminal après installation
-
-# --- Initialisation ---
-
-kb init                           # interactif (Y/n, Enter accepte)
-kb init --use-trash               # activer la corbeille (défaut: true)
-kb init --use-trash=false         # désactiver la corbeille
-kb init --no-init-dashboard       # sans scripts dashboard
-
-# --- Dashboard ---
-
-kb dashboard                      # interface web localhost:5522
-# DEV  (cargo run)     → npx next dev   (hot reload)
-# PROD (binaire installé) → npx next start (build auto si manquant)
-
-# --- Tâches ---
-
-# Ajouter une tâche
+kb init [--use-trash] [--no-init-dashboard]
+kb dashboard
 kb add "title" -p high --to "user-id-1,user-id-2"
-# → retourne id-task
-
-# Lister (corbeille exclue)
-kb list
-kb list -p high        # filtre priorité (low | medium | high)
-kb list -s done        # filtre statut (todo | in-progress | done)
-
-# Changer le statut
+kb assign "task-id" --to "user-id-1,user-id-2"
+kb list [-p high] [-s done]
 kb move "task-id" done
-
-# Supprimer (→ corbeille si use_trash=true)
 kb del "task-id"
-
-# --- Corbeille ---
-
-kb trash                          # lister
-kb trash --restore "task-id"      # restaurer
-kb trash --clean-all              # vider définitivement
-
-# --- Utilisateurs ---
-
-kb user add "username" --pic "path/image"
-# → retourne id-user
-
-kb user put "user-id" --username "new" --pic "new/path"
+kb trash
+kb trash --restore "task-id"
+kb trash --clean-all
+kb user add "username" [--pic "path/image"]
+kb user put "user-id" [--username "new"] [--pic "new/path"]
 kb user del "user-id"
 kb user show
-
-# --- Configuration ---
-
-kb config                         # voir
-kb config --set use_trash=false
+kb config
 kb config --set theme_dashboard=light
-
-# --- Données ---
-
-kb status                         # KPIs (corbeille exclue)
-kb data                           # dump JSON
-kb data --to-file path/data.json  # export JSON
-
+kb config --set use_trash=false
+kb status
+kb data [--to-file path/data.json]
 ```
-
-### Priorités : `low` | `medium` | `high`
-### Statuts : `todo` | `in-progress` | `done`
-
----
 
 ## Dashboard
 
-Le dashboard est une app Next.js (dans `dashboard/`) avec **shadcn/ui** et **Tabler Icons**.
+- 3 columns: À faire / En cours / Terminé
+- Drag & drop cards between columns
+- Add task modal with multi-user assignment
+- Mini user manager modal
+- Existing task assignment edit in task detail modal
+- Trash drawer + restore / clean all
+- Search by title, user, status, priority
+- Dark/light theme persisted in `localStorage`
+- Responsive layout, no build step
 
-| Fonctionnalité | Détail |
-|---|---|
-| Kanban 3 colonnes | À faire / En cours / Terminé |
-| Drag & drop | Glisser une carte entre colonnes |
-| Badges priorité | low (vert) · medium (ambre) · high (rose) |
-| Assignation | Avatars utilisateurs sur les cartes |
-| Corbeille | Drop une carte → corbeille, restaurer, vider |
-| Dark/Light | Toggle persistant dans localStorage |
-| Ajout rapide | Dialog avec titre, priorité, assignés |
+## API
 
-Le dashboard détecte automatiquement le mode :
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/data` | GET | Full JSON data |
+| `/api/move` | POST | Change task status |
+| `/api/add` | POST | Create task |
+| `/api/del` | POST | Delete task |
+| `/api/users` | GET/POST/PUT/DELETE | User CRUD |
+| `/api/task-assign` | POST | Replace task assignees |
+| `/api/folder` | GET | Current folder |
+| `/api/init` | POST | Init project |
+| `/api/trash-restore` | POST | Restore task from trash |
+| `/api/trash-clean` | POST | Empty trash |
 
-- **DEV** : binaire dans `target/debug/` → `npx next dev` (hot reload)
-- **PROD** : binaire installé → `npx next start` (build auto si `.next/` absent)
-
----
-
-## Build & Install
+## Build
 
 ```powershell
-cargo build                  # debug → target/debug/kb.exe
-cargo build --release        # release → target/release/kb.exe
+cargo build
+cargo build --release
 ```
 
-**Installation (Windows)** — 3 façons :
+## Notes
 
-| Méthode | Commande |
-|---|---|
-| Double-clic | `target/release/kb.exe` (auto-install) |
-| Terminal | `target/release/kb.exe install` |
-| Script | `powershell -ExecutionPolicy Bypass -File install.ps1` |
-
-Après installation, ouvre un **nouveau terminal** et tape `kb --version`.
-
----
-
-## À venir
-
-```bash
-kb notif              # notification users assignés
-```
+- Dashboard assets are embedded at compile time.
+- `kb assign` exists for CLI parity with dashboard assignment editing.
+- `delete_user` also removes deleted users from task assignments.

@@ -13,6 +13,7 @@ use serde::Deserialize;
 use serde_json::json;
 use tower::service_fn;
 
+use crate::commands::{assign, user};
 use crate::embed::DashboardAssets;
 use crate::models::{Priority, Status};
 use crate::store;
@@ -33,6 +34,25 @@ struct AddBody {
 #[derive(Deserialize)]
 struct IdBody {
     id: String,
+}
+
+#[derive(Deserialize)]
+struct UserCreateBody {
+    username: String,
+    pic: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct UserUpdateBody {
+    id: String,
+    username: Option<String>,
+    pic: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct AssignBody {
+    task_id: String,
+    assigned_to: Option<Vec<String>>,
 }
 
 async fn api_data() -> impl IntoResponse {
@@ -94,6 +114,69 @@ async fn api_add(Json(body): Json<AddBody>) -> impl IntoResponse {
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
     }
     Json(json!({"id": id})).into_response()
+}
+
+async fn api_users() -> impl IntoResponse {
+    match user::list_users() {
+        Ok(users) => Json(users).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
+    }
+}
+
+async fn api_user_add(Json(body): Json<UserCreateBody>) -> impl IntoResponse {
+    if body.username.trim().is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "username requis"}))).into_response();
+    }
+    match user::create_user(body.username.trim(), body.pic.as_deref()) {
+        Ok(id) => Json(json!({"id": id})).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
+    }
+}
+
+async fn api_user_update(Json(body): Json<UserUpdateBody>) -> impl IntoResponse {
+    if body.username.as_deref().is_some_and(|v| v.trim().is_empty()) {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "username vide"}))).into_response();
+    }
+    match user::update_user(
+        &body.id,
+        body.username.as_deref().map(str::trim).filter(|s| !s.is_empty()),
+        body.pic.as_deref(),
+    ) {
+        Ok(_) => Json(json!({"ok": true})).into_response(),
+        Err(e) => {
+            if e.starts_with("User ID inconnu:") || e.starts_with("Spécifie") {
+                (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response()
+            } else {
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response()
+            }
+        }
+    }
+}
+
+async fn api_user_delete(Json(body): Json<IdBody>) -> impl IntoResponse {
+    match user::delete_user(&body.id) {
+        Ok(_) => Json(json!({"ok": true})).into_response(),
+        Err(e) => {
+            if e.starts_with("User ID inconnu:") {
+                (StatusCode::NOT_FOUND, Json(json!({"error": e}))).into_response()
+            } else {
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response()
+            }
+        }
+    }
+}
+
+async fn api_task_assign(Json(body): Json<AssignBody>) -> impl IntoResponse {
+    match assign::set_assignment(&body.task_id, body.assigned_to.unwrap_or_default()) {
+        Ok(_) => Json(json!({"ok": true})).into_response(),
+        Err(e) => {
+            if e.starts_with("Task ID inconnu:") || e.starts_with("User ID inconnu:") {
+                (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response()
+            } else {
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response()
+            }
+        }
+    }
 }
 
 async fn api_del(Json(body): Json<IdBody>) -> impl IntoResponse {
@@ -228,6 +311,8 @@ pub async fn run_server(port: u16) -> Result<(), String> {
         .route("/move", post(api_move))
         .route("/add", post(api_add))
         .route("/del", post(api_del))
+        .route("/users", get(api_users).post(api_user_add).put(api_user_update).delete(api_user_delete))
+        .route("/task-assign", post(api_task_assign))
         .route("/folder", get(api_folder))
         .route("/init", post(api_init))
         .route("/trash-restore", post(api_trash_restore))

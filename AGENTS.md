@@ -15,25 +15,26 @@ Dashboard est un simple fichier HTML + CSS + JS vanilla, **embarqué dans le bin
 ```
 kanban/
 ├── src/
-│   ├── main.rs                  # CLI entry, clap commands
-│   ├── embed.rs                 # rust-embed: DashboardAssets struct (embarque dashboard/)
-│   ├── models.rs                # Task, User, Store, Config, Status, Priority
-│   ├── store.rs                 # load/save kanban.md, config
-│   ├── server.rs                # Rust HTTP server (axum): API + embedded files
-│   └── commands/
-│       ├── mod.rs
-│       ├── add.rs               # kb add <title> -p <prio> --to <users>
-│       ├── config.rs            # kb config --set key=val
-│       ├── dashboard.rs         # kb dashboard (tokio runtime + axum server)
-│       ├── data.rs              # kb data (JSON dump)
-│       ├── del.rs               # kb del <id>
-│       ├── init.rs              # kb init (interactive + flags)
-│       ├── install.rs           # kb install (Windows PATH)
-│       ├── list.rs              # kb list [-p] [-s]
-│       ├── move_task.rs         # kb move <id> <status>
-│       ├── status.rs            # kb status (KPIs)
-│       ├── trash.rs             # kb trash [--restore] [--clean-all]
-│       └── user.rs              # kb user add/put/del/show
+	│   ├── main.rs                  # CLI entry, clap commands
+	│   ├── embed.rs                 # rust-embed: DashboardAssets struct (embarque dashboard/)
+	│   ├── models.rs                # Task, User, Store, Config, Status, Priority
+	│   ├── store.rs                 # load/save kanban.md, config
+	│   ├── server.rs                # Rust HTTP server (axum): API + embedded files
+	│   └── commands/
+	│       ├── mod.rs
+	│       ├── add.rs               # kb add <title> -p <prio> --to <users>
+	│       ├── assign.rs            # kb assign <task-id> --to <users>
+	│       ├── config.rs            # kb config --set key=val
+	│       ├── dashboard.rs         # kb dashboard (tokio runtime + axum server)
+	│       ├── data.rs              # kb data (JSON dump)
+	│       ├── del.rs               # kb del <id>
+	│       ├── init.rs              # kb init (interactive + flags)
+	│       ├── install.rs           # kb install (Windows PATH)
+	│       ├── list.rs              # kb list [-p] [-s]
+	│       ├── move_task.rs         # kb move <id> <status>
+	│       ├── status.rs            # kb status (KPIs)
+	│       ├── trash.rs             # kb trash [--restore] [--clean-all]
+	│       └── user.rs              # kb user add/put/del/show
 ├── dashboard/                   # HTML/CSS/JS vanilla — embarqué dans le binaire
 │   ├── index.html               # Structure HTML + JS inline (drag & drop, modals, state)
 │   ├── style.css                # Tous les styles (CSS variables, themes, responsive)
@@ -73,6 +74,7 @@ struct Store { tasks: Vec<Task>, users: Vec<User> }
 | `kb init --use-trash` | Enable trash (default) |
 | `kb dashboard` | Launch web UI (serveur Rust intégré) |
 | `kb add <title> -p <prio> --to <ids>` | Add task, returns UUID |
+| `kb assign <task-id> --to <ids>` | Replace assignment on existing task |
 | `kb list [-p <prio>] [-s <status>]` | List tasks (excludes trash) |
 | `kb move <id> <status>` | Change task status |
 | `kb del <id>` | Soft delete (to trash) or hard delete |
@@ -110,6 +112,8 @@ Toutes les routes sont gérées par les handlers Rust dans `src/server.rs`.
 | `/api/move` | POST `{id, status}` | `kb move` |
 | `/api/add` | POST `{title, priority, assigned_to}` | `kb add` |
 | `/api/del` | POST `{id}` | `kb del` |
+| `/api/users` | GET/POST/PUT/DELETE | User CRUD |
+| `/api/task-assign` | POST `{task_id, assigned_to}` | `kb assign` |
 | `/api/folder` | GET | Retourne `{folder}` |
 | `/api/init` | POST | `kb init` |
 | `/api/trash-restore` | POST `{id}` | `kb trash --restore` |
@@ -127,4 +131,4 @@ Toutes les routes sont gérées par les handlers Rust dans `src/server.rs`.
 Current: 1.2.0
 
 ## To Do
-- Lier l'API réelle au dashboard (au lieu des données mock)
+- Dashboard branché sur API réelle pour tasks + users

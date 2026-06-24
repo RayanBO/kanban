@@ -27,7 +27,18 @@ pub fn run(priority: Option<Priority>, status: Option<Status>) -> Result<(), Str
         let assigned = if task.assigned_to.is_empty() {
             "-".to_string()
         } else {
-            task.assigned_to.join(", ")
+            task.assigned_to
+                .iter()
+                .map(|id| {
+                    store
+                        .users
+                        .iter()
+                        .find(|u| &u.id == id)
+                        .map(|u| u.username.as_str())
+                        .unwrap_or(id.as_str())
+                })
+                .collect::<Vec<_>>()
+                .join(", ")
         };
         println!(
             "{:<38} {:<30} {:<10} {:<12} {}",

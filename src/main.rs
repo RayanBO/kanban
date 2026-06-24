@@ -34,6 +34,13 @@ enum Command {
         assigned_to: Vec<String>,
     },
 
+    /// Assigner des utilisateurs à une tâche existante
+    Assign {
+        task_id: String,
+        #[arg(long = "to", value_delimiter = ',')]
+        assigned_to: Vec<String>,
+    },
+
     /// Gérer les utilisateurs
     User {
         #[command(subcommand)]
@@ -144,6 +151,11 @@ fn main() {
             });
             let assigned_to: Vec<String> = assigned_to.into_iter().filter(|s| !s.is_empty()).collect();
             commands::add::run(&title, p, assigned_to)
+        }
+
+        Command::Assign { task_id, assigned_to } => {
+            let assigned_to: Vec<String> = assigned_to.into_iter().filter(|s| !s.is_empty()).collect();
+            commands::assign::run(&task_id, assigned_to)
         }
 
         Command::User { action } => match action {

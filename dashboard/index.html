@@ -33,6 +33,28 @@
                         </svg>
                         <span class="label">Ajouter</span>
                     </button>
+                    <button
+                        class="btn btn-ghost"
+                        id="usersBtn"
+                        aria-label="Gérer les utilisateurs"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <span class="label">Users</span>
+                    </button>
                 </div>
                 <div class="header-search" id="headerSearch">
                     <svg
@@ -203,6 +225,47 @@
             </div>
         </div>
 
+        <div class="modal-overlay" id="usersModal">
+            <div class="modal users-modal" role="dialog" aria-label="Gestion des utilisateurs">
+                <div class="modal-header">
+                    <h2>Utilisateurs</h2>
+                    <button
+                        class="btn-close"
+                        id="usersModalClose"
+                        aria-label="Fermer"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="users-create">
+                        <div class="form-group">
+                            <label for="newUserName">Nom</label>
+                            <input
+                                type="text"
+                                id="newUserName"
+                                placeholder="Nom utilisateur"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="newUserPic">Photo / pic</label>
+                            <input
+                                type="text"
+                                id="newUserPic"
+                                placeholder="Optionnel"
+                            />
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" id="createUserBtn">
+                                Ajouter
+                            </button>
+                        </div>
+                    </div>
+                    <div id="userManagerList" class="user-manager-list"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal-overlay" id="trashModal">
             <div class="modal" role="dialog" aria-label="Corbeille">
                 <div class="modal-header">
@@ -276,6 +339,7 @@
             let TRASH = [];
             let USERS = [];
             let useTrash = true;
+            let currentHeroTaskId = null;
 
             async function apiJson(path, opts) {
                 const r = await fetch(path, opts);
@@ -293,6 +357,22 @@
                 };
             }
 
+            function fillUserSelect(select, selectedIds = []) {
+                if (!select) return;
+                select.innerHTML = "";
+                USERS.forEach((u) => {
+                    const opt = document.createElement("option");
+                    opt.value = u.id;
+                    opt.textContent = u.name;
+                    opt.selected = selectedIds.includes(u.id);
+                    select.appendChild(opt);
+                });
+            }
+
+            function userInitial(name) {
+                return (name || "?").trim().charAt(0).toUpperCase() || "?";
+            }
+
             async function loadData() {
                 const [data, config] = await Promise.all([
                     apiJson("/api/data"),
@@ -301,6 +381,7 @@
                 USERS = (data.users || []).map((u, i) => ({
                     id: u.id,
                     name: u.username,
+                    pic: u.pic || "",
                     color: COLORS[i % COLORS.length],
                 }));
                 TASKS = (data.tasks || [])
@@ -329,6 +410,7 @@
                 renderBoard();
                 renderFooter();
                 renderTrashList();
+                renderUserManager();
             }
 
             const COLUMNS = [
@@ -426,6 +508,7 @@
                 card.addEventListener("dragend", () => {
                     card.classList.remove("dragging");
                 });
+                card.addEventListener("click", () => openHero(task.id));
 
                 return card;
             }
@@ -540,6 +623,12 @@
                     updateAssignOptions();
                     openModal("addModal");
                 });
+            document.getElementById("usersBtn").addEventListener("click", () => {
+                document.getElementById("newUserName").value = "";
+                document.getElementById("newUserPic").value = "";
+                renderUserManager();
+                openModal("usersModal");
+            });
             document
                 .getElementById("addModalClose")
                 .addEventListener("click", () => closeModal("addModal"));
@@ -564,15 +653,34 @@
                 });
 
             function updateAssignOptions() {
-                const select = document.getElementById("taskAssign");
-                select.innerHTML = "";
-                USERS.forEach((u) => {
-                    const opt = document.createElement("option");
-                    opt.value = u.id;
-                    opt.textContent = u.name;
-                    select.appendChild(opt);
-                });
+                fillUserSelect(document.getElementById("taskAssign"));
             }
+
+            document
+                .getElementById("usersModalClose")
+                .addEventListener("click", () => closeModal("usersModal"));
+            document
+                .getElementById("createUserBtn")
+                .addEventListener("click", async () => {
+                    const username = document
+                        .getElementById("newUserName")
+                        .value.trim();
+                    const pic = document
+                        .getElementById("newUserPic")
+                        .value.trim();
+                    if (!username) return;
+                    await apiJson("/api/users", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            username,
+                            pic: pic || null,
+                        }),
+                    });
+                    await loadData();
+                    document.getElementById("newUserName").value = "";
+                    document.getElementById("newUserPic").value = "";
+                });
 
             document
                 .getElementById("trashModalClose")
@@ -658,6 +766,105 @@
                     btn.addEventListener("click", () =>
                         restoreTask(btn.dataset.restore),
                     );
+                });
+            }
+
+            async function saveUserFromRow(row) {
+                const id = row.dataset.userId;
+                const username = row.querySelector('[data-field="username"]').value.trim();
+                const pic = row.querySelector('[data-field="pic"]').value.trim();
+                if (!username) return;
+                await apiJson("/api/users", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id,
+                        username,
+                        pic: pic || null,
+                    }),
+                });
+                await loadData();
+            }
+
+            async function deleteUserById(id) {
+                await apiJson("/api/users", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id }),
+                });
+                await loadData();
+            }
+
+            async function saveTaskAssignment(taskId, select) {
+                const assigned = Array.from(select.selectedOptions).map(
+                    (o) => o.value,
+                );
+                await apiJson("/api/task-assign", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        assigned_to: assigned,
+                    }),
+                });
+                await loadData();
+            }
+
+            function renderUserManager() {
+                const list = document.getElementById("userManagerList");
+                if (!list) return;
+
+                if (!USERS.length) {
+                    list.innerHTML =
+                        '<div class="user-empty">Aucun utilisateur.</div>';
+                    return;
+                }
+
+                list.innerHTML = USERS.map(
+                    (u, index) => `
+    <div class="user-row" data-user-id="${u.id}">
+      <div class="user-row-avatar" style="background:${u.color}">
+        ${userInitial(u.name)}
+      </div>
+      <div class="user-row-fields">
+        <label>
+          <span>Nom</span>
+          <input data-field="username" value="${esc(u.name)}" />
+        </label>
+        <label>
+          <span>Pic</span>
+          <input data-field="pic" value="${esc(u.pic || "")}" placeholder="Optionnel" />
+        </label>
+        <div class="user-row-meta">ID ${u.id.slice(0, 8)} · #${index + 1}</div>
+      </div>
+      <div class="user-row-actions">
+        <button class="btn btn-sm btn-primary" data-action="save">Enregistrer</button>
+        <button class="btn btn-sm btn-danger" data-action="delete">Supprimer</button>
+      </div>
+    </div>
+  `,
+                ).join("");
+
+                list.querySelectorAll("[data-action='save']").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const row = btn.closest(".user-row");
+                        if (row) await saveUserFromRow(row);
+                    });
+                });
+
+                list.querySelectorAll("[data-action='delete']").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const row = btn.closest(".user-row");
+                        if (!row) return;
+                        if (
+                            !window.confirm(
+                                "Supprimer cet utilisateur ? Ses assignations vont être retirées des tâches.",
+                            )
+                        ) {
+                            return;
+                        }
+                        await deleteUserById(row.dataset.userId);
+                    });
                 });
             }
 
@@ -942,6 +1149,7 @@
             function openHero(id) {
                 const task = TASKS.find((t) => t.id === id);
                 if (!task) return;
+                currentHeroTaskId = id;
 
                 const assignedUsers = USERS.filter((u) =>
                     task.assigned.includes(u.id),
@@ -998,7 +1206,26 @@
       <h4>ID</h4>
       <span style="font-size:12px;color:var(--text-tertiary);font-family:monospace;">${esc(task.id)}</span>
     </div>
+    <div class="hero-section hero-assignment">
+      <div class="hero-section-head">
+        <h4>Assignation</h4>
+        <button class="btn btn-sm btn-primary" id="heroAssignSave">Enregistrer</button>
+      </div>
+      <select id="heroTaskAssign" multiple></select>
+      <div class="hero-help">Ctrl/Cmd + clic pour multi-sélection</div>
+    </div>
   `;
+
+                fillUserSelect(
+                    document.getElementById("heroTaskAssign"),
+                    task.assigned,
+                );
+                document
+                    .getElementById("heroAssignSave")
+                    .addEventListener("click", async () => {
+                        const select = document.getElementById("heroTaskAssign");
+                        await saveTaskAssignment(currentHeroTaskId, select);
+                    });
 
                 document.getElementById("heroOverlay").classList.add("open");
             }
@@ -1010,6 +1237,7 @@
                         document
                             .getElementById("heroOverlay")
                             .classList.remove("open");
+                        currentHeroTaskId = null;
                     }
                 });
             document
@@ -1018,6 +1246,7 @@
                     document
                         .getElementById("heroOverlay")
                         .classList.remove("open");
+                    currentHeroTaskId = null;
                 });
 
             function esc(str) {

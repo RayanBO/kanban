@@ -3,37 +3,17 @@
 **IMPORTANT: Keep this file updated.** Every agent working on this project MUST update AGENTS.md when adding/removing features, changing architecture, or modifying design decisions.
 
 ## Overview
-Pure HTML + CSS + vanilla JS kanban board. Zero dependencies. Open in browser directly.
-
-| Aspect | Detail |
-|--------|--------|
-| Stack | HTML5, CSS3, Vanilla JS (ES6) |
-| Dependencies | None |
-| Open | `index.html` direct dans le navigateur |
-| Theme | Dark/Light toggle, persisté dans `localStorage` |
-
-## File Structure
-```
-dashboard-v2/
-├── index.html          # HTML structure + inline JS (drag & drop, modals, state)
-├── style.css           # All styles (CSS variables, themes, responsive, animations)
-├── fonts/              # Self-hosted woff2 (Average Sans + Lily Script One)
-├── AGENTS.md           # This file — project context for AI agents
-├── README.md           # User-facing docs
-├── .opencode/          # OpenCode config
-```
+Pure HTML + CSS + vanilla JS kanban board. Zero dependencies. Open in browser directly. State comes from Rust API at runtime, not mock data.
 
 ## Data Model (JavaScript)
 ```js
 Task { id, title, priority, status, assigned }
-User { id, name, color }
+User { id, username, pic, color }
 ```
 
 - `priority`: `low` | `medium` | `high`
 - `status`: `todo` | `in-progress` | `done`
 - `assigned`: array of user IDs
-
-11 mock tasks pre-chargées (t1–t11). 4 users mock (Alice, Bob, Charlie, Diana).
 
 ## Features
 
@@ -63,6 +43,11 @@ User { id, name, color }
 - Validation basique (titre requis)
 - Nouvelle tâche créée en statut `todo`
 
+### User Manager
+- Modal compact pour ajouter / modifier / supprimer utilisateurs
+- Assignation des users via select multiple dans le hero modal
+- Ajout tâche garde assignation multiple existante
+
 ### Search (Recherche)
 - Barre de recherche dans le header avec icône loupe
 - Focus → ouvre un overlay de résultats (mode hero)
@@ -86,7 +71,7 @@ User { id, name, color }
 - Cards sorted by priority: high → medium → low (left to right)
 - Each card: fixed 220px width, multi-line title wraps up to 3 lines
 - Card layout: header (priority dot+label left, status icon right) / body (title) / mini-footer (user avatars)
-- Status icons: ○ (À faire), ◐ (En cours, accent), ✓ (Terminé, green)
+- Status icons: ◯ (À faire), ◐ (En cours, accent), ✓ (Terminé, green)
 - User avatars: 20px overlapping circles with color initials
 - Click card → opens hero modal with full details
 - Updates reactively when tasks change (add, move, trash)
@@ -97,15 +82,12 @@ User { id, name, color }
   - 2nd sibling: `--r: 0.25` (faint)
   - 3rd+ sibling: `--r: 0` (hidden)
   - Controlled by `opacity: var(--r); transition: opacity 0.3s` on `.ft-header, .ft-body, .ft-users`
-- **3D Hover Chain**: CSS `perspective: 1000px` + `transform-style: preserve-3d`
-  - Hovered: `translateZ(60px) scale(1.015)`, accent border, `z-index: 100`
-  - Siblings: progressive `rotateY(±4°→±9°)` + `translateZ(30px→0)` + `brightness(0.95→0.85)`
-  - Right chain via `+` combinator, left chain via `:has()` combinators
 
 ### Hero Modal
 - Large overlay modal for task detail view
 - Shows title (large, heading font), status badge, priority badge
 - Shows assigned users with avatar pills
+- Lets user reassign task via multi-select + save
 - Close via × button, overlay click, or Escape
 
 ### Responsive
@@ -138,7 +120,6 @@ User { id, name, color }
 - `aria-label` sur boutons icônes
 - Escape key ferme les modales
 - Labels `<label>` associés aux inputs
-- `prefers-reduced-motion` pas explicitement géré (todo)
 
 ## Performance
 - Aucune dépendance externe
@@ -157,7 +138,7 @@ User { id, name, color }
 
 ## To Do
 - [ ] `prefers-reduced-motion` support
-- [ ] Édition de tâche existante
-- [ ] Filtres / recherche
+- [ ] Édition complète de tâche
+- [ ] Filtres / recherche avancés
 - [ ] Reordering dans une colonne
 - [ ] Animations entrée/sortie cartes
