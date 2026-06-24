@@ -63,11 +63,29 @@ jobs:
         shell: bash
         run: cp ${{ matrix.binary }} ${{ matrix.artifact }}
 
+      - name: Install cargo-wix
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: cargo install cargo-wix
+
+      - name: Build MSI
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: bash
+        run: |
+          cargo wix build --target x86_64-pc-windows-msvc --nocapture
+          cp target/wix/*.msi kb-windows-x64.msi
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
+
+      - name: Upload MSI
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kb-windows-x64.msi
+          path: kb-windows-x64.msi
 
   release:
     name: Créer la Release GitHub

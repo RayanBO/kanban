@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product
+        Id="*"
+        Name="kb"
+        Version="$(var.Kb.Version)"
+        Manufacturer="Rayan Rav"
+        UpgradeCode="A7B3C9D1-E2F4-5678-90AB-CDEF12345678">
+
+        <Package
+            InstallerVersion="200"
+            Compressed="yes"
+            InstallScope="perMachine"
+            Manufacturer="Rayan Rav"
+            Description="kb — Kanban in your terminal" />
+
+        <MajorUpgrade
+            DowngradeErrorMessage="A newer version of kb is already installed."
+            Schedule="afterInstallValidate" />
+
+        <MediaTemplate EmbedCab="yes" />
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLDIR" Name="kb">
+                    <Component Id="MainBinary" Guid="*" Win64="yes">
+                        <File
+                            Id="kb.exe"
+                            Name="kb.exe"
+                            Source="$(var.Kb.TargetPath)"
+                            KeyPath="yes" />
+
+                        <Environment
+                            Id="PATH"
+                            Name="PATH"
+                            Value="[INSTALLDIR]"
+                            Permanent="no"
+                            Part="last"
+                            Action="set"
+                            System="yes" />
+                    </Component>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <Feature Id="ProductFeature" Title="kb" Level="1">
+            <ComponentRef Id="MainBinary" />
+        </Feature>
+
+        <Property Id="ARPHELPLINK" Value="https://github.com/rayanbo/kanban" />
+        <Property Id="ARPURLINFOABOUT" Value="https://github.com/rayanbo/kanban" />
+        <Property Id="ARPNOREPAIR" Value="1" />
+        <Property Id="ARPNOMODIFY" Value="1" />
+    </Product>
+</Wix>
