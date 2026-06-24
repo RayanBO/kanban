@@ -1,2 +1,35 @@
+# Rust
 /target
+Cargo.lock.bak
+
+# Binaires compilés
+/build/
+*.exe
+*.pdb
+*.dll
+*.so
+*.dylib
+
+# Artifacts GitHub Actions (si build local)
+kb-windows-x64.exe
+kb-linux-x64
+kb-macos-arm64
+kb-macos-x64
+
+# Données kanban locales (chaque utilisateur a les siennes)
 .kanban/
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
