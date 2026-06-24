@@ -397,9 +397,6 @@
                 }
                 if (config) {
                     useTrash = config.use_trash !== false;
-                    document.getElementById("fab").style.display = useTrash
-                        ? ""
-                        : "none";
                     document.getElementById("trashToggle").checked = useTrash;
                     updateTrashToggleLabel();
                 }
@@ -717,9 +714,6 @@
                 .getElementById("trashToggle")
                 .addEventListener("change", async (e) => {
                     useTrash = e.target.checked;
-                    document.getElementById("fab").style.display = useTrash
-                        ? ""
-                        : "none";
                     updateTrashToggleLabel();
                     renderTrashList();
                     await apiJson("/api/config", {
@@ -1132,7 +1126,13 @@
                     .join("");
 
                 scroll.querySelectorAll(".footer-task").forEach((el) => {
-                    el.addEventListener("click", () => openHero(el.dataset.id));
+                    el.addEventListener("click", () => {
+                        document
+                            .getElementById("heroOverlay")
+                            .classList.remove("open");
+                        currentHeroTaskId = null;
+                        focusTask(el.dataset.id);
+                    });
                 });
             }
 
