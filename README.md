@@ -2,8 +2,20 @@
 
 **kb** is a portable Kanban board that lives in your terminal. Built with Rust, it ships as a single binary — no dependencies, no database, no cloud. When you need visuals, `kb dashboard` starts an embedded web server with a drag-and-drop board, task tags, and live reload support.
 
-🌐 Landing page: [https://rayanbo.github.io/kanban/](https://rayanbo.github.io/kanban/)  
-📦 License: [MIT](LICENSE)
+🌐 Landing page: [https://rayanbo.github.io/kanban/](https://rayanbo.github.io/kanban/)
+
+---
+
+## AI Agent Skill
+
+A structured [SKILL.md](skills/SKILL.md) is available to teach AI coding agents how to use `kb`:
+
+- All CLI commands with syntax and flags
+- YAML data model (task, user, comment, config fields)
+- HTTP API route table
+- Dashboard features overview
+
+Install via `npx skills add rayanbo/kanban/skills` or copy [`skills/SKILL.md`](skills/SKILL.md) manually.
 
 ---
 
@@ -118,6 +130,4 @@ Requires Rust (install via [rustup](https://rustup.rs/)). The `kb` binary lands 
 - Deleting a user also removes them from all task assignments.
 - Task data is stored as strict YAML — version-control friendly and easy to extend with comments.
 
----
-
-Built by [Rayan Rav](https://rayan-rav.web.app/) · Open source under the MIT License.
+Built by [Rayan Rav](https://rayan-rav.web.app/) · Open source under the [MIT License](LICENSE).

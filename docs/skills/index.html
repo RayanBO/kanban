@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skills · kb</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .skills-hero {
+      padding: 80px 20px 40px;
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .skills-hero h1 { font-size: var(--step-1); margin-bottom: 16px; }
+    .skills-hero p { color: var(--text-dim); font-size: var(--step-0); line-height: 1.6; }
+    .skills-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+    .skill-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      background: var(--bg-secondary);
+      transition: border-color 0.2s;
+    }
+    .skill-card:hover { border-color: var(--accent); }
+    .skill-card h2 {
+      font-size: var(--step-0);
+      margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .skill-card h2 code { font-size: var(--step--1); color: var(--accent); }
+    .skill-card .desc { color: var(--text-dim); margin: 0 0 20px; line-height: 1.55; font-size: var(--step--1); }
+    .skill-install {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .skill-install .cmd { color: var(--text); user-select: all; }
+    .skill-install .label { color: var(--text-dim); font-family: 'Inter', sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .copy-btn {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      transition: opacity 0.2s;
+    }
+    .copy-btn:hover { opacity: 0.8; }
+    .skill-meta {
+      margin-top: 20px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .skill-meta span { font-size: 13px; color: var(--text-dim); }
+    .skill-meta strong { color: var(--text); font-weight: 600; }
+    .skill-footer {
+      margin-top: 40px;
+      padding: 24px;
+      border-radius: 8px;
+      background: var(--bg);
+      text-align: center;
+    }
+    .skill-footer p { margin: 0; font-size: var(--step--1); color: var(--text-dim); }
+    .skill-footer a { color: var(--accent); }
+    @media (max-width: 600px) {
+      .skill-install { flex-direction: column; align-items: stretch; }
+      .skill-install .cmd { font-size: 12px; word-break: break-all; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="../" class="logo"><span>~</span>/kb</a>
+      <nav class="header-links" aria-label="Main navigation">
+        <a href="../">Home</a>
+        <a href="../docs/">Docs</a>
+        <a href="./" class="active">Skills</a>
+        <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener" class="btn-outline">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>
+          <span>GitHub</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="skills-hero">
+      <h1>AI Agent Skills</h1>
+      <p>Teach your AI coding agent how to use <strong>kb</strong> — every command, model, API route, and dashboard feature in a structured skill file.</p>
+    </section>
+
+    <div class="skills-container">
+      <div class="skill-card">
+        <h2><span>🧠</span> kb CLI <code>v1.3.0</code></h2>
+        <p class="desc">Complete agent skill for <strong>kb</strong>. Covers <code>init</code>, <code>add</code>, <code>edit</code>, <code>move</code>, <code>del</code>, <code>list</code>, <code>tags</code>, <code>comment add/del</code>, <code>user</code>, <code>status</code>, <code>export</code>, <code>config</code>, <code>trash</code>, and <code>dashboard</code>. Also includes the YAML data model, HTTP API table, and dashboard UI overview.</p>
+
+        <div class="skill-install">
+          <span class="label">Install via skills.sh</span>
+          <code class="cmd">npx skills add rayanbo/kanban/skills</code>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('npx skills add rayanbo/kanban/skills')">Copy</button>
+        </div>
+
+        <div class="skill-meta">
+          <span><strong>Repo:</strong> <a href="https://github.com/rayanbo/kanban">rayanbo/kanban</a></span>
+          <span><strong>Format:</strong> <a href="https://skills.sh">skills.sh</a></span>
+          <span><strong>File:</strong> <a href="https://github.com/rayanbo/kanban/blob/main/skills/SKILL.md">SKILL.md</a></span>
+        </div>
+      </div>
+
+      <div class="skill-footer">
+        <p>You can also copy <a href="https://raw.githubusercontent.com/rayanbo/kanban/refs/heads/main/skills/SKILL.md">SKILL.md</a> manually into your agent's skills folder, e.g. <code>.opencode/skills/kb/SKILL.md</code> or <code>~/.config/opencode/skills/kb/SKILL.md</code>.</p>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

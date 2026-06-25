@@ -148,7 +148,7 @@ tasks:
 - id: 7d701c53-fc92-4223-934a-357fbd7e5b53
   title: Ajout de la Skills pour le Agent IA
   priority: high
-  status: in-progress
+  status: done
   assigned_to:
   - 798299d4-5552-49df-83bf-074216589694
   tags: []
@@ -205,4 +205,10 @@ comments:
   author_id: 798299d4-5552-49df-83bf-074216589694
   content: dfdd
   created_at: 2026-06-25T13:39:48.158306500Z
+  updated_at: null
+- id: 4ee5ba6b-41cc-43ae-8986-17032e62b5e7
+  task_id: 2d5e0683-cf81-4503-a815-9f26e77fdd32
+  author_id: 798299d4-5552-49df-83bf-074216589694
+  content: ssdd
+  created_at: 2026-06-25T17:18:10.317270600Z
   updated_at: null
