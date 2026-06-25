@@ -3,10 +3,24 @@ use clap::{CommandFactory, Parser, Subcommand};
 mod commands;
 mod embed;
 mod models;
+mod tags;
 mod server;
 mod store;
 
 use models::{Priority, Status};
+
+#[cfg(windows)]
+fn set_console_utf8() {
+    use windows_sys::Win32::System::Console::{SetConsoleCP, SetConsoleOutputCP};
+
+    unsafe {
+        SetConsoleCP(65001);
+        SetConsoleOutputCP(65001);
+    }
+}
+
+#[cfg(not(windows))]
+fn set_console_utf8() {}
 
 fn parse_date(s: &str) -> Result<chrono::DateTime<chrono::Utc>, String> {
     let d = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
@@ -23,7 +37,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Initialiser kanban.md dans le dossier courant
+    /// Initialiser kb-data.yaml dans le dossier courant
     Init {
         #[arg(long, default_missing_value = "true", num_args = 0..=1)]
         use_trash: Option<bool>,
@@ -36,6 +50,8 @@ enum Command {
         title: String,
         #[arg(short = 'p', long, default_value = "medium")]
         priority: String,
+        #[arg(long = "tag", value_delimiter = ',')]
+        tags: Vec<String>,
         #[arg(long = "to", value_delimiter = ',')]
         assigned_to: Vec<String>,
         #[arg(long)]
@@ -64,6 +80,8 @@ enum Command {
         priority: Option<String>,
         #[arg(short = 's', long)]
         status: Option<String>,
+        #[arg(long = "tag", value_delimiter = ',')]
+        tags: Vec<String>,
     },
 
     /// Modifier le titre, la priorité ou la date d'échéance d'une tâche
@@ -73,6 +91,10 @@ enum Command {
         title: Option<String>,
         #[arg(short = 'p', long)]
         priority: Option<String>,
+        #[arg(long = "tag", value_delimiter = ',')]
+        tags: Vec<String>,
+        #[arg(long)]
+        clear_tags: bool,
         #[arg(long)]
         due: Option<String>,
         #[arg(long)]
@@ -85,11 +107,19 @@ enum Command {
         new_status: String,
     },
 
-    /// Afficher toutes les données en JSON
-    Data {
+    /// Exporter toutes les données
+    #[command(alias = "data")]
+    Export {
+        #[arg(long, conflicts_with = "md")]
+        json: bool,
+        #[arg(long, conflicts_with = "json")]
+        md: bool,
         #[arg(long = "to-file")]
         to_file: Option<String>,
     },
+
+    /// Lister les tags existants
+    Tags,
 
     /// Supprimer une tâche (corbeille si activée)
     Del {
@@ -114,7 +144,10 @@ enum Command {
     Install,
 
     /// Lancer le dashboard web
-    Dashboard,
+    Dashboard {
+        #[arg(long)]
+        watch: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -142,6 +175,8 @@ enum UserAction {
 }
 
 fn main() {
+    set_console_utf8();
+
     if std::env::args().len() <= 1 {
         if commands::install::is_installed() {
             let mut cmd = Cli::command();
@@ -165,17 +200,18 @@ fn main() {
             commands::init::run(use_trash, no_init_dashboard)
         }
 
-        Command::Add { title, priority, assigned_to, due } => {
+        Command::Add { title, priority, tags, assigned_to, due } => {
             let p = priority.parse::<Priority>().unwrap_or_else(|e| {
                 eprintln!("Erreur: {e}");
                 std::process::exit(1);
             });
+            let tags = tags::normalize_tags(tags);
             let assigned_to: Vec<String> = assigned_to.into_iter().filter(|s| !s.is_empty()).collect();
             let due_date = due.as_deref().map(parse_date).transpose().unwrap_or_else(|e| {
                 eprintln!("Erreur: {e}");
                 std::process::exit(1);
             });
-            commands::add::run(&title, p, assigned_to, due_date)
+            commands::add::run(&title, p, tags, assigned_to, due_date)
         }
 
         Command::Assign { task_id, assigned_to } => {
@@ -196,7 +232,7 @@ fn main() {
 
         Command::Status => commands::status::run(),
 
-        Command::List { priority, status } => {
+        Command::List { priority, status, tags } => {
             let p = priority.as_deref().map(|s| {
                 s.parse::<Priority>().unwrap_or_else(|e| {
                     eprintln!("Erreur: {e}");
@@ -209,16 +245,23 @@ fn main() {
                     std::process::exit(1);
                 })
             });
-            commands::list::run(p, st)
+            let tags = tags::normalize_tags(tags);
+            commands::list::run(p, st, tags)
         }
 
-        Command::Edit { id, title, priority, due, clear_due } => {
+        Command::Edit { id, title, priority, tags, clear_tags, due, clear_due } => {
             let p = priority.as_deref().map(|s| {
                 s.parse::<Priority>().unwrap_or_else(|e| {
                     eprintln!("Erreur: {e}");
                     std::process::exit(1);
                 })
             });
+            let tags = if clear_tags {
+                Some(Vec::new())
+            } else {
+                let tags = tags::normalize_tags(tags);
+                if tags.is_empty() { None } else { Some(tags) }
+            };
             let due_date = if clear_due {
                 Some(None)
             } else {
@@ -227,7 +270,7 @@ fn main() {
                     std::process::exit(1);
                 })
             };
-            commands::edit::run(&id, title.as_deref(), p, due_date)
+            commands::edit::run(&id, title.as_deref(), p, tags, due_date)
         }
 
         Command::Move { task_id, new_status } => {
@@ -238,7 +281,15 @@ fn main() {
             commands::move_task::run(&task_id, s)
         }
 
-        Command::Data { to_file } => commands::data::run(to_file.as_deref()),
+        Command::Export { json, md, to_file } => {
+            let format = commands::export::ExportFormat::from_flags(json, md).unwrap_or_else(|e| {
+                eprintln!("Erreur: {e}");
+                std::process::exit(1);
+            });
+            commands::export::run(format, to_file.as_deref())
+        }
+
+        Command::Tags => commands::tags::run(),
 
         Command::Del { task_id } => commands::del::run(&task_id),
 
@@ -261,7 +312,7 @@ fn main() {
 
         Command::Install => commands::install::run(),
 
-        Command::Dashboard => commands::dashboard::run(),
+        Command::Dashboard { watch } => commands::dashboard::run(watch),
     };
 
     if let Err(e) = result {

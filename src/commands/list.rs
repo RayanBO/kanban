@@ -1,7 +1,8 @@
 use crate::models::{Priority, Status};
 use crate::store::load;
+use crate::tags::{format_tags, tags_match};
 
-pub fn run(priority: Option<Priority>, status: Option<Status>) -> Result<(), String> {
+pub fn run(priority: Option<Priority>, status: Option<Status>, tags: Vec<String>) -> Result<(), String> {
     let store = load()?;
 
     let tasks: Vec<_> = store
@@ -10,6 +11,7 @@ pub fn run(priority: Option<Priority>, status: Option<Status>) -> Result<(), Str
         .filter(|t| !t.is_trash)
         .filter(|t| priority.as_ref().map_or(true, |p| &t.priority == p))
         .filter(|t| status.as_ref().map_or(true, |s| &t.status == s))
+        .filter(|t| tags_match(&t.tags, &tags))
         .collect();
 
     if tasks.is_empty() {
@@ -18,10 +20,10 @@ pub fn run(priority: Option<Priority>, status: Option<Status>) -> Result<(), Str
     }
 
     println!(
-        "{:<38} {:<30} {:<10} {:<12} {}",
-        "ID", "TITRE", "PRIORITÉ", "STATUT", "ASSIGNÉ À"
+        "{:<38} {:<30} {:<10} {:<12} {:<24} {}",
+        "ID", "TITRE", "PRIORITÉ", "STATUT", "TAGS", "ASSIGNÉ À"
     );
-    println!("{}", "-".repeat(100));
+    println!("{}", "-".repeat(126));
 
     for task in tasks {
         let assigned = if task.assigned_to.is_empty() {
@@ -41,11 +43,12 @@ pub fn run(priority: Option<Priority>, status: Option<Status>) -> Result<(), Str
                 .join(", ")
         };
         println!(
-            "{:<38} {:<30} {:<10} {:<12} {}",
+            "{:<38} {:<30} {:<10} {:<12} {:<24} {}",
             task.id,
             truncate(&task.title, 28),
             task.priority,
             task.status,
+            truncate(&format_tags(&task.tags), 22),
             assigned
         );
     }

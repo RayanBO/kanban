@@ -48,7 +48,7 @@ fn pad_to(s: &str, w: usize) -> String {
     }
 }
 
-fn banner(url: &str) {
+fn banner(url: &str, watch: bool) {
     let raw = env::current_dir()
         .unwrap_or_default()
         .to_string_lossy()
@@ -82,6 +82,9 @@ fn banner(url: &str) {
     println!("{}", line(&format!("    📁  {}", folder)));
     println!("{}", line(&format!("    🔗  {}", url)));
     println!("{}", line("    ⚙   Serveur Rust"));
+    if watch {
+        println!("{}", line("    👀  Mode watch actif"));
+    }
     sp();
     println!("{}", line("    Appuie sur Entrée pour quitter"));
     sp();
@@ -89,7 +92,7 @@ fn banner(url: &str) {
     println!();
 }
 
-pub fn run() -> Result<(), String> {
+pub fn run(watch: bool) -> Result<(), String> {
     if !is_initialized() {
         return Err("Aucun projet Kanban ici. Exécute 'kb init' d'abord.".to_string());
     }
@@ -97,9 +100,9 @@ pub fn run() -> Result<(), String> {
     let port = server::find_port(5522);
     let url = format!("http://localhost:{}", port);
 
-    banner(&url);
+    banner(&url, watch);
 
     let rt = tokio::runtime::Runtime::new().map_err(|e| format!("Échec du runtime: {e}"))?;
 
-    rt.block_on(server::run_server(port))
+    rt.block_on(server::run_server(port, watch))
 }

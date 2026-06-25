@@ -1,8 +1,7 @@
-use crate::store::{load, save, load_config};
+use crate::store::{load, save};
 
 pub fn run(task_id: &str) -> Result<(), String> {
     let mut store = load()?;
-    let config = load_config()?;
 
     let task = store
         .tasks
@@ -10,7 +9,7 @@ pub fn run(task_id: &str) -> Result<(), String> {
         .find(|t| t.id == task_id)
         .ok_or_else(|| format!("Task ID inconnu: {task_id}"))?;
 
-    if config.use_trash {
+    if store.config.use_trash {
         if task.is_trash {
             return Err(format!("Task {task_id} est déjà dans la corbeille."));
         }

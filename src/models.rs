@@ -68,6 +68,8 @@ pub struct Task {
     pub priority: Priority,
     pub status: Status,
     pub assigned_to: Vec<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
     pub created_at: DateTime<Utc>,
     #[serde(default)]
     pub due_date: Option<DateTime<Utc>>,
@@ -98,8 +100,43 @@ pub struct User {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Comment {
+    pub id: String,
+    pub task_id: String,
+    pub author_id: Option<String>,
+    pub content: String,
+    pub created_at: DateTime<Utc>,
+    #[serde(default)]
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Store {
+    #[serde(default = "store_version")]
+    pub version: u32,
+    #[serde(default)]
+    pub config: Config,
+    #[serde(default)]
     pub tasks: Vec<Task>,
+    #[serde(default)]
     pub users: Vec<User>,
+    #[serde(default)]
+    pub comments: Vec<Comment>,
+}
+
+impl Default for Store {
+    fn default() -> Self {
+        Self {
+            version: store_version(),
+            config: Config::default(),
+            tasks: Vec::new(),
+            users: Vec::new(),
+            comments: Vec::new(),
+        }
+    }
+}
+
+fn store_version() -> u32 {
+    1
 }

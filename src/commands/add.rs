@@ -2,9 +2,16 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::models::{Priority, Status, Task};
+use crate::tags::normalize_tags;
 use crate::store::{load, save};
 
-pub fn run(title: &str, priority: Priority, assigned_to: Vec<String>, due_date: Option<DateTime<Utc>>) -> Result<(), String> {
+pub fn run(
+    title: &str,
+    priority: Priority,
+    tags: Vec<String>,
+    assigned_to: Vec<String>,
+    due_date: Option<DateTime<Utc>>,
+) -> Result<(), String> {
     let mut store = load()?;
 
     // Valider que les user IDs existent
@@ -22,6 +29,7 @@ pub fn run(title: &str, priority: Priority, assigned_to: Vec<String>, due_date: 
         priority,
         status: Status::Todo,
         assigned_to,
+        tags: normalize_tags(tags),
         created_at: Utc::now(),
         due_date,
         is_trash: false,

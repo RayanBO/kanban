@@ -506,6 +506,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
+ "futures-core",
  "rust-embed",
  "serde",
  "serde_json",
@@ -514,6 +515,7 @@ dependencies = [
  "tower",
  "tower-http",
  "uuid",
+ "windows-sys",
 ]
 
 [[package]]

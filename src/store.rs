@@ -1,29 +1,40 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::models::{Config, Status, Store};
+use serde::Deserialize;
+
+use crate::models::{Config, Store};
 
 pub fn kanban_dir() -> PathBuf {
     Path::new(".kanban").to_path_buf()
 }
 
-pub fn kanban_path() -> PathBuf {
+pub fn data_path() -> PathBuf {
+    kanban_dir().join("kb-data.yaml")
+}
+
+fn legacy_data_path() -> PathBuf {
     kanban_dir().join("kanban.md")
 }
 
-pub fn config_path() -> PathBuf {
+fn legacy_config_path() -> PathBuf {
     kanban_dir().join("kb-config.yaml")
 }
 
+#[allow(dead_code)]
 pub fn load_config() -> Result<Config, String> {
-    let path = config_path();
-    if !path.exists() {
-        return Ok(Config::default());
+    if data_path().exists() {
+        return Ok(load()?.config);
     }
-    let content = fs::read_to_string(&path)
-        .map_err(|e| format!("Lecture config échouée: {e}"))?;
-    serde_yaml::from_str(&content)
-        .map_err(|e| format!("Parse config échoué: {e}"))
+
+    if legacy_config_path().exists() {
+        let content = fs::read_to_string(legacy_config_path())
+            .map_err(|e| format!("Lecture config échouée: {e}"))?;
+        return serde_yaml::from_str(&content)
+            .map_err(|e| format!("Parse config échoué: {e}"));
+    }
+
+    Ok(Config::default())
 }
 
 fn ensure_kanban_dir() -> Result<(), String> {
@@ -35,41 +46,78 @@ fn ensure_kanban_dir() -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn save_config(config: &Config) -> Result<(), String> {
-    ensure_kanban_dir()?;
-    let yaml = serde_yaml::to_string(config)
-        .map_err(|e| format!("Sérialisation config échouée: {e}"))?;
-    fs::write(config_path(), yaml)
-        .map_err(|e| format!("Écriture config échouée: {e}"))
+    let mut store = load().unwrap_or_default();
+    store.config = config.clone();
+    save(&store)
 }
 
 pub fn is_initialized() -> bool {
-    kanban_path().exists()
+    data_path().exists() || legacy_data_path().exists()
 }
 
 pub fn load() -> Result<Store, String> {
-    if !is_initialized() {
-        return Err("kanban.md non trouvé. Lance `kb init` d'abord.".to_string());
+    if data_path().exists() {
+        let content = fs::read_to_string(data_path())
+            .map_err(|e| format!("Lecture kb-data.yaml échouée: {e}"))?;
+        return parse_store_yaml(&content).map_err(|e| format!("Parse kb-data.yaml échoué: {e}"));
     }
-    let content = fs::read_to_string(kanban_path())
-        .map_err(|e| format!("Lecture kanban.md échouée: {e}"))?;
-    let yaml = extract_frontmatter(&content)?;
-    serde_yaml::from_str(&yaml)
-        .map_err(|e| format!("Parse YAML échoué: {e}"))
+
+    if legacy_data_path().exists() {
+        return load_legacy_store();
+    }
+
+    if legacy_config_path().exists() {
+        let mut store = Store::default();
+        store.config = load_legacy_config()?;
+        return Ok(store);
+    }
+
+    Err("kb-data.yaml non trouvé. Lance `kb init` d'abord.".to_string())
 }
 
 pub fn save(store: &Store) -> Result<(), String> {
     ensure_kanban_dir()?;
     let yaml = serde_yaml::to_string(store)
         .map_err(|e| format!("Sérialisation YAML échouée: {e}"))?;
-    let body = generate_markdown(store);
-    let content = format!("---\n{yaml}---\n\n{body}");
-    fs::write(kanban_path(), content)
-        .map_err(|e| format!("Écriture kanban.md échouée: {e}"))
+    fs::write(data_path(), yaml)
+        .map_err(|e| format!("Écriture kb-data.yaml échouée: {e}"))
+}
+
+fn load_legacy_store() -> Result<Store, String> {
+    let content = fs::read_to_string(legacy_data_path())
+        .map_err(|e| format!("Lecture kanban.md échouée: {e}"))?;
+    let yaml = extract_frontmatter(&content)?;
+    let mut store: Store = parse_store_yaml(&yaml)
+        .map_err(|e| format!("Parse YAML échoué: {e}"))?;
+
+    if legacy_config_path().exists() {
+        store.config = load_legacy_config()?;
+    }
+
+    Ok(store)
+}
+
+fn load_legacy_config() -> Result<Config, String> {
+    let content = fs::read_to_string(legacy_config_path())
+        .map_err(|e| format!("Lecture config échouée: {e}"))?;
+    serde_yaml::from_str(&content)
+        .map_err(|e| format!("Parse config échoué: {e}"))
+}
+
+fn parse_store_yaml(content: &str) -> Result<Store, serde_yaml::Error> {
+    let content = content.strip_prefix('\u{feff}').unwrap_or(content);
+    let mut docs = serde_yaml::Deserializer::from_str(content);
+    let doc = docs.next().ok_or_else(|| <serde_yaml::Error as serde::de::Error>::custom("empty YAML document"))?;
+    Store::deserialize(doc)
 }
 
 fn extract_frontmatter(content: &str) -> Result<String, String> {
-    let normalized = content.strip_prefix('\u{feff}').unwrap_or(content).replace("\r\n", "\n");
+    let normalized = content
+        .strip_prefix('\u{feff}')
+        .unwrap_or(content)
+        .replace("\r\n", "\n");
     let after_first = normalized
         .strip_prefix("---\n")
         .ok_or("kanban.md: frontmatter YAML manquant (doit commencer par ---)")?;
@@ -77,68 +125,4 @@ fn extract_frontmatter(content: &str) -> Result<String, String> {
         .find("\n---\n")
         .ok_or("kanban.md: frontmatter non fermé")?;
     Ok(after_first[..end + 1].to_string())
-}
-
-fn resolve_users(store: &Store, ids: &[String]) -> String {
-    if ids.is_empty() {
-        return "-".to_string();
-    }
-    ids.iter()
-        .map(|id| {
-            store
-                .users
-                .iter()
-                .find(|u| &u.id == id)
-                .map(|u| u.username.as_str())
-                .unwrap_or(id.as_str())
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
-fn generate_markdown(store: &Store) -> String {
-    let mut out = String::new();
-
-    out.push_str("# Kanban\n\n");
-
-    out.push_str("## Users\n\n");
-    out.push_str("| ID | Username | Pic |\n");
-    out.push_str("|----|----------|-----|\n");
-    for user in &store.users {
-        let pic = user.pic.as_deref().unwrap_or("-");
-        out.push_str(&format!(
-            "| `{}` | {} | {} |\n",
-            user.id,
-            user.username,
-            pic
-        ));
-    }
-    out.push('\n');
-
-    out.push_str("## Tasks\n\n");
-
-    for (status, header) in &[
-        (Status::Todo, "### Todo"),
-        (Status::InProgress, "### In Progress"),
-        (Status::Done, "### Done"),
-    ] {
-        out.push_str(header);
-        out.push_str("\n\n");
-        out.push_str("| ID | Title | Priority | Due | Assigned |\n");
-        out.push_str("|----|-------|----------|-----|----------|\n");
-        for task in store.tasks.iter().filter(|t| &t.status == status && !t.is_trash) {
-            let due = task.due_date.map_or("-".to_string(), |d| d.format("%Y-%m-%d").to_string());
-            out.push_str(&format!(
-                "| `{}` | {} | {} | {} | {} |\n",
-                task.id,
-                task.title,
-                task.priority,
-                due,
-                resolve_users(store, &task.assigned_to)
-            ));
-        }
-        out.push('\n');
-    }
-
-    out
 }

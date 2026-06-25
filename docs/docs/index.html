@@ -303,6 +303,7 @@
           <a href="#add">add</a>
           <a href="#edit">edit</a>
           <a href="#list">list</a>
+          <a href="#tags">tags</a>
           <a href="#move">move</a>
           <a href="#assign">assign</a>
           <a href="#del">del</a>
@@ -326,7 +327,7 @@
         <h2>kb init</h2>
         <div class="cmd-block">
           <div class="cmd-name">init</div>
-          <div class="cmd-desc">Initialise a new Kanban board in the current directory. Creates <span class="mono">.kanban/kanban.md</span> and <span class="mono">.kanban/kb-config.yaml</span>.</div>
+          <div class="cmd-desc">Initialise a new Kanban board in the current directory. Creates <span class="mono">.kanban/kb-data.yaml</span>.</div>
           <div class="cmd-syntax">kb init [--use-trash] [--no-init-dashboard]</div>
           <table class="cmd-flags">
             <tr><th>Flag</th><th>Type</th><th>Description</th></tr>
@@ -359,19 +360,20 @@
         <h2>kb add</h2>
         <div class="cmd-block">
           <div class="cmd-name">add</div>
-          <div class="cmd-desc">Create a new task with status <span class="mono">todo</span>. Assign users and set priority.</div>
-          <div class="cmd-syntax">kb add &lt;title&gt; [-p &lt;priority&gt;] [--to &lt;users&gt;] [--due &lt;date&gt;]</div>
+          <div class="cmd-desc">Create a new task with status <span class="mono">todo</span>. Assign users, set tags, and set priority.</div>
+          <div class="cmd-syntax">kb add &lt;title&gt; [-p &lt;priority&gt;] [--tag &lt;labels&gt;] [--to &lt;users&gt;] [--due &lt;date&gt;]</div>
           <table class="cmd-flags">
             <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
             <tr><td>title</td><td>yes</td><td>Task title (positional). Wrap in quotes for multi-word titles.</td></tr>
             <tr><td>-p, --priority</td><td>no</td><td>Priority: <span class="mono">low</span>, <span class="mono">medium</span> (default), or <span class="mono">high</span>.</td></tr>
+            <tr><td>--tag</td><td>no</td><td>Comma-separated tags or labels.</td></tr>
             <tr><td>--to</td><td>no</td><td>Comma-separated user IDs to assign.</td></tr>
             <tr><td>--due</td><td>no</td><td>Due date in <span class="mono">YYYY-MM-DD</span> format.</td></tr>
           </table>
           <span class="cmd-example"><span class="comment"># Simple task</span></span>
           <span class="cmd-example"><span class="prompt">$</span> kb add "Implement login"</span>
-          <span class="cmd-example"><span class="comment"># High priority task with due date</span></span>
-          <span class="cmd-example"><span class="prompt">$</span> kb add "Fix memory leak" -p high --due 2025-12-31 --to "uid1,uid2"</span>
+          <span class="cmd-example"><span class="comment"># High priority task with due date and labels</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb add "Fix memory leak" -p high --tag backend,urgent --due 2025-12-31 --to "uid1,uid2"</span>
           <span class="cmd-example"><span class="comment"># &#8594; Task created with ID a1b2c3d4</span></span>
           <a href="#" class="top-link">&#8593; Top</a>
         </div>
@@ -382,13 +384,15 @@
         <h2>kb edit</h2>
         <div class="cmd-block">
           <div class="cmd-name">edit</div>
-          <div class="cmd-desc">Update a task's title, priority, or due date without moving or recreating it.</div>
-          <div class="cmd-syntax">kb edit &lt;id&gt; [--title &lt;text&gt;] [-p &lt;priority&gt;] [--due &lt;date&gt;] [--clear-due]</div>
+          <div class="cmd-desc">Update a task's title, priority, tags, or due date without moving or recreating it.</div>
+          <div class="cmd-syntax">kb edit &lt;id&gt; [--title &lt;text&gt;] [-p &lt;priority&gt;] [--tag &lt;labels&gt;] [--clear-tags] [--due &lt;date&gt;] [--clear-due]</div>
           <table class="cmd-flags">
             <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
             <tr><td>id</td><td>yes</td><td>UUID of the task to edit.</td></tr>
             <tr><td>--title</td><td>no</td><td>New title for the task.</td></tr>
             <tr><td>-p, --priority</td><td>no</td><td>New priority: <span class="mono">low</span>, <span class="mono">medium</span>, or <span class="mono">high</span>.</td></tr>
+            <tr><td>--tag</td><td>no</td><td>Comma-separated tags or labels.</td></tr>
+            <tr><td>--clear-tags</td><td>no</td><td>Remove all tags from the task.</td></tr>
             <tr><td>--due</td><td>no</td><td>Set due date in <span class="mono">YYYY-MM-DD</span> format.</td></tr>
             <tr><td>--clear-due</td><td>no</td><td>Remove the due date.</td></tr>
           </table>
@@ -409,17 +413,33 @@
         <h2>kb list</h2>
         <div class="cmd-block">
           <div class="cmd-name">list</div>
-          <div class="cmd-desc">List all non-trashed tasks. Optionally filter by priority or status.</div>
-          <div class="cmd-syntax">kb list [-p &lt;priority&gt;] [-s &lt;status&gt;]</div>
+          <div class="cmd-desc">List all non-trashed tasks. Optionally filter by priority, status, or tags.</div>
+          <div class="cmd-syntax">kb list [-p &lt;priority&gt;] [-s &lt;status&gt;] [--tag &lt;labels&gt;]</div>
           <table class="cmd-flags">
             <tr><th>Flag</th><th>Values</th><th>Description</th></tr>
             <tr><td>-p, --priority</td><td><span class="mono">low</span>, <span class="mono">medium</span>, <span class="mono">high</span></td><td>Filter by priority level.</td></tr>
             <tr><td>-s, --status</td><td><span class="mono">todo</span>, <span class="mono">in-progress</span>, <span class="mono">done</span></td><td>Filter by status.</td></tr>
+            <tr><td>--tag</td><td>Comma-separated labels</td><td>Filter tasks that contain all requested tags.</td></tr>
           </table>
           <span class="cmd-example"><span class="comment"># All tasks</span></span>
           <span class="cmd-example"><span class="prompt">$</span> kb list</span>
           <span class="cmd-example"><span class="comment"># High priority, in progress</span></span>
           <span class="cmd-example"><span class="prompt">$</span> kb list -p high -s in-progress</span>
+          <span class="cmd-example"><span class="comment"># Filter by labels</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb list --tag backend,urgent</span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- tags -->
+      <div class="cmd-group" id="tags">
+        <h2>kb tags</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">tags</div>
+          <div class="cmd-desc">List all labels currently used in the board, with usage counts.</div>
+          <div class="cmd-syntax">kb tags</div>
+          <span class="cmd-example"><span class="prompt">$</span> kb tags</span>
+          <span class="cmd-example"><span class="comment"># &#8594; backend  4</span></span>
           <a href="#" class="top-link">&#8593; Top</a>
         </div>
       </div>
@@ -544,19 +564,22 @@
         </div>
       </div>
 
-      <!-- data -->
-      <div class="cmd-group" id="data">
-        <h2>kb data</h2>
+      <!-- export -->
+      <div class="cmd-group" id="export">
+        <h2>kb export</h2>
         <div class="cmd-block">
-          <div class="cmd-name">data</div>
-          <div class="cmd-desc">Export all board data as JSON. Useful for backups, scripting, or piping to other tools.</div>
-          <div class="cmd-syntax">kb data [--to-file &lt;path&gt;]</div>
+          <div class="cmd-name">export</div>
+          <div class="cmd-desc">Export all board data as JSON or Markdown backups. Files are written in <span class="mono">.kanban/</span>.</div>
+          <div class="cmd-syntax">kb export [--json | --md] [--to-file &lt;path&gt;]</div>
           <table class="cmd-flags">
             <tr><th>Flag</th><th>Description</th></tr>
-            <tr><td>--to-file</td><td>Write JSON to a file instead of stdout.</td></tr>
+            <tr><td>--json</td><td>Write a JSON backup. Default format and legacy alias: <span class="mono">kb data</span>.</td></tr>
+            <tr><td>--md</td><td>Write a Markdown backup.</td></tr>
+            <tr><td>--to-file</td><td>Write to a custom path instead of <span class="mono">.kanban/</span>.</td></tr>
           </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb export --json</span>
+          <span class="cmd-example"><span class="prompt">$</span> kb export --md</span>
           <span class="cmd-example"><span class="prompt">$</span> kb data</span>
-          <span class="cmd-example"><span class="prompt">$</span> kb data --to-file backup.json</span>
           <a href="#" class="top-link">&#8593; Top</a>
         </div>
       </div>
@@ -609,9 +632,11 @@
         <h2>kb dashboard</h2>
         <div class="cmd-block">
           <div class="cmd-name">dashboard</div>
-          <div class="cmd-desc">Start the web dashboard server. Serves a drag-and-drop Kanban board UI with real-time updates on <span class="mono">localhost</span>.</div>
-          <div class="cmd-syntax">kb dashboard</div>
+          <div class="cmd-desc">Start the web dashboard server. Serves a drag-and-drop Kanban board UI with real-time updates on <span class="mono">localhost</span>. Use watch mode to auto-reload on <span class="mono">kb-data.yaml</span> changes.</div>
+          <div class="cmd-syntax">kb dashboard [--watch]</div>
           <span class="cmd-example"><span class="prompt">$</span> kb dashboard</span>
+          <span class="cmd-example"><span class="comment"># Auto-reload when kanban files change</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb dashboard --watch</span>
           <span class="cmd-example"><span class="comment"># &#8594; Dashboard at http://localhost:5522</span></span>
           <span class="cmd-example"><span class="comment"># Press Enter to quit</span></span>
           <a href="#" class="top-link">&#8593; Top</a>

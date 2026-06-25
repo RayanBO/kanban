@@ -2,10 +2,17 @@ use chrono::{DateTime, Utc};
 
 use crate::models::Priority;
 use crate::store::{load, save};
+use crate::tags::normalize_tags;
 
-pub fn run(id: &str, title: Option<&str>, priority: Option<Priority>, due_date: Option<Option<DateTime<Utc>>>) -> Result<(), String> {
-    if title.is_none() && priority.is_none() && due_date.is_none() {
-        return Err("Spécifie au moins --title, --priority ou --due.".to_string());
+pub fn run(
+    id: &str,
+    title: Option<&str>,
+    priority: Option<Priority>,
+    tags: Option<Vec<String>>,
+    due_date: Option<Option<DateTime<Utc>>>,
+) -> Result<(), String> {
+    if title.is_none() && priority.is_none() && due_date.is_none() && tags.is_none() {
+        return Err("Spécifie au moins --title, --priority, --tag/--clear-tags ou --due.".to_string());
     }
     let mut store = load()?;
     let task = store
@@ -19,6 +26,9 @@ pub fn run(id: &str, title: Option<&str>, priority: Option<Priority>, due_date: 
     }
     if let Some(p) = priority {
         task.priority = p;
+    }
+    if let Some(tags) = tags {
+        task.tags = normalize_tags(tags);
     }
     if let Some(d) = due_date {
         task.due_date = d;

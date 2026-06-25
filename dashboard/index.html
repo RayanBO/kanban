@@ -117,6 +117,97 @@
                 </div>
             </header>
 
+            <div class="board-toolbar">
+                <div class="tag-filters" id="tagFilters"></div>
+                <div class="export-actions">
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        id="exportJsonBtn"
+                        aria-label="Save JSON export"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16" />
+                            <path d="M14 2v6h6" />
+                            <path d="M18 22H10a2 2 0 0 1-2-2V8" />
+                            <path d="M14 2 20 8" />
+                        </svg>
+                        <span class="label">Save JSON</span>
+                    </button>
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        id="exportMdBtn"
+                        aria-label="Save Markdown export"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M4 19.5V4.5A1.5 1.5 0 0 1 5.5 3h13A1.5 1.5 0 0 1 20 4.5v15A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5Z" />
+                            <path d="M8 8h8M8 12h8M8 16h5" />
+                        </svg>
+                        <span class="label">Save MD</span>
+                    </button>
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        id="downloadJsonBtn"
+                        aria-label="Download JSON export"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M12 3v12" />
+                            <path d="M8 11l4 4 4-4" />
+                            <path d="M4 20h16" />
+                        </svg>
+                        <span class="label">Download JSON</span>
+                    </button>
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        id="downloadMdBtn"
+                        aria-label="Download Markdown export"
+                    >
+                        <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M12 3v12" />
+                            <path d="M8 11l4 4 4-4" />
+                            <path d="M4 20h16" />
+                        </svg>
+                        <span class="label">Download MD</span>
+                    </button>
+                    <span class="export-status" id="exportStatus" aria-live="polite"></span>
+                </div>
+            </div>
+
             <main class="board" id="board"></main>
 
             <div class="search-overlay" id="searchOverlay">
@@ -197,13 +288,40 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="taskTitle">Title</label>
-                        <input
-                            type="text"
-                            id="taskTitle"
-                            placeholder="What needs to be done?"
-                            required
-                        />
+                        <label for="taskTitleEditor">Title</label>
+                        <div class="rich-editor" data-rich-editor="taskTitle">
+                            <div class="rich-editor-toolbar" role="toolbar" aria-label="Title formatting">
+                                <button type="button" class="rich-editor-btn" data-md-command="h1" aria-label="Heading 1">
+                                    H1
+                                </button>
+                                <button type="button" class="rich-editor-btn" data-md-command="ul" aria-label="Bullet list">
+                                    •
+                                </button>
+                                <button type="button" class="rich-editor-btn" data-md-command="ol" aria-label="Numbered list">
+                                    1.
+                                </button>
+                                <button type="button" class="rich-editor-btn" data-md-command="bold" aria-label="Bold">
+                                    <strong>B</strong>
+                                </button>
+                                <button type="button" class="rich-editor-btn" data-md-command="italic" aria-label="Italic">
+                                    <em>I</em>
+                                </button>
+                                <button type="button" class="rich-editor-btn" data-md-command="clear" aria-label="Clear formatting">
+                                    Aa
+                                </button>
+                            </div>
+                            <div
+                                class="rich-editor-surface"
+                                id="taskTitleEditor"
+                                contenteditable="true"
+                                role="textbox"
+                                aria-multiline="true"
+                                data-placeholder="Write a title. Markdown style supported."
+                            ></div>
+                        </div>
+                        <div class="setting-desc">
+                            Rich text stored as markdown.
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="taskPriority">Priority</label>
@@ -212,6 +330,17 @@
                             <option value="medium" selected>Medium</option>
                             <option value="high">High</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskTags">Tags / labels</label>
+                        <input
+                            type="text"
+                            id="taskTags"
+                            placeholder="frontend, urgent"
+                        />
+                        <div class="setting-desc">
+                            Comma-separated labels.
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="taskAssign">Assigned to</label>
@@ -290,13 +419,41 @@
                 </div>
                 <div class="modal-body">
                     <div class="task-edit-grid">
-                        <div class="form-group">
-                            <label for="editTaskTitle">Title</label>
-                            <input
-                                type="text"
-                                id="editTaskTitle"
-                                placeholder="Task title"
-                            />
+                        <div class="form-group task-edit-title">
+                            <label for="editTaskTitleEditor">Title</label>
+                            <div class="rich-editor" data-rich-editor="editTaskTitle">
+                                <div class="rich-editor-toolbar" role="toolbar" aria-label="Title formatting">
+                                    <button type="button" class="rich-editor-btn" data-md-command="h1" aria-label="Heading 1">
+                                        H1
+                                    </button>
+                                    <button type="button" class="rich-editor-btn" data-md-command="ul" aria-label="Bullet list">
+                                        •
+                                    </button>
+                                    <button type="button" class="rich-editor-btn" data-md-command="ol" aria-label="Numbered list">
+                                        1.
+                                    </button>
+                                    <button type="button" class="rich-editor-btn" data-md-command="bold" aria-label="Bold">
+                                        <strong>B</strong>
+                                    </button>
+                                    <button type="button" class="rich-editor-btn" data-md-command="italic" aria-label="Italic">
+                                        <em>I</em>
+                                    </button>
+                                    <button type="button" class="rich-editor-btn" data-md-command="clear" aria-label="Clear formatting">
+                                        Aa
+                                    </button>
+                                </div>
+                                <div
+                                    class="rich-editor-surface"
+                                    id="editTaskTitleEditor"
+                                    contenteditable="true"
+                                    role="textbox"
+                                    aria-multiline="true"
+                                    data-placeholder="Write a title. Markdown style supported."
+                                ></div>
+                            </div>
+                            <div class="setting-desc">
+                                Rich text stored as markdown.
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="editTaskPriority">Priority</label>
@@ -305,6 +462,17 @@
                                 <option value="medium">Medium</option>
                                 <option value="high">High</option>
                             </select>
+                        </div>
+                        <div class="form-group task-edit-tags">
+                            <label for="editTaskTags">Tags / labels</label>
+                            <input
+                                type="text"
+                                id="editTaskTags"
+                                placeholder="frontend, urgent"
+                            />
+                            <div class="setting-desc">
+                                Comma-separated labels.
+                            </div>
                         </div>
                         <div class="form-group task-edit-due">
                             <label for="editTaskDue">Due date</label>
@@ -378,6 +546,8 @@
             </button>
         </div>
 
+        <div class="comment-tooltip" id="commentTooltip" aria-hidden="true"></div>
+
         <script>
             const COLORS = [
                 "#6366f1",
@@ -392,14 +562,22 @@
             let TASKS = [];
             let TRASH = [];
             let USERS = [];
+            let COMMENTS = [];
             let useTrash = true;
             let currentHeroTaskId = null;
             let editingTaskId = null;
+            let activeTagFilter = "";
+            let selectedCommentAuthorId = "";
+            let exportStatusTimer = null;
+            let commentTooltipHideTimer = null;
 
             async function apiJson(path, opts) {
                 const r = await fetch(path, opts);
-                if (!r.ok) throw new Error(r.statusText);
-                return r.json();
+                const payload = await r.json().catch(() => null);
+                if (!r.ok) {
+                    throw new Error(payload?.error || r.statusText);
+                }
+                return payload;
             }
 
             function mapApiTask(t) {
@@ -409,6 +587,7 @@
                     priority: t.priority,
                     status: t.status,
                     assigned: t.assigned_to || [],
+                    tags: t.tags || [],
                     due_date: t.due_date || null,
                 };
             }
@@ -446,6 +625,7 @@
                 TRASH = (data.tasks || [])
                     .filter((t) => t.is_trash)
                     .map(mapApiTask);
+                COMMENTS = data.comments || [];
                 if (config && !localStorage.getItem("kb-theme")) {
                     applyTheme(
                         config.theme_dashboard === "light" ? "light" : "dark",
@@ -457,13 +637,457 @@
                     updateTrashToggleLabel();
                 }
                 render();
+                if (currentHeroTaskId) {
+                    openHero(currentHeroTaskId);
+                }
             }
 
             function render() {
+                renderTagFilters();
                 renderBoard();
                 renderFooter();
                 renderTrashList();
                 renderUserManager();
+            }
+
+            function setExportStatus(message, kind = "ok") {
+                const el = document.getElementById("exportStatus");
+                if (!el) return;
+                el.textContent = message;
+                el.dataset.state = kind;
+                clearTimeout(exportStatusTimer);
+                exportStatusTimer = setTimeout(() => {
+                    el.textContent = "";
+                    delete el.dataset.state;
+                }, 3500);
+            }
+
+            function markdownInlineToHtml(text) {
+                if (!text) return "";
+                let html = esc(text);
+                const codeSpans = [];
+                html = html.replace(/`([^`]+)`/g, (_, code) => {
+                    const token = `@@CODE${codeSpans.length}@@`;
+                    codeSpans.push(code);
+                    return token;
+                });
+                html = html.replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>");
+                html = html.replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, "$1<em>$2</em>");
+                html = html.replace(/(^|[^_])_([^_\n]+?)_(?!_)/g, "$1<em>$2</em>");
+                html = html.replace(/@@CODE(\d+)@@/g, (_, index) => {
+                    const code = codeSpans[Number(index)] || "";
+                    return `<code>${code}</code>`;
+                });
+                return html;
+            }
+
+            function markdownBlocksToHtml(text) {
+                const lines = (text || "").replace(/\r\n/g, "\n").split("\n");
+                const blocks = [];
+                let i = 0;
+
+                while (i < lines.length) {
+                    const line = lines[i];
+                    if (!line.trim()) {
+                        i += 1;
+                        continue;
+                    }
+
+                    if (/^#\s+/.test(line)) {
+                        blocks.push(`<h1>${markdownInlineToHtml(line.replace(/^#\s+/, ""))}</h1>`);
+                        i += 1;
+                        continue;
+                    }
+
+                    const unordered = line.match(/^(\s*)[-*+]\s+(.+)$/);
+                    const ordered = line.match(/^(\s*)\d+\.\s+(.+)$/);
+                    if (unordered || ordered) {
+                        const isOrdered = Boolean(ordered);
+                        const items = [];
+                        while (i < lines.length) {
+                            const current = lines[i];
+                            const match = current.match(
+                                isOrdered
+                                    ? /^(\s*)\d+\.\s+(.+)$/
+                                    : /^(\s*)[-*+]\s+(.+)$/,
+                            );
+                            if (!match) break;
+                            items.push(`<li>${markdownInlineToHtml(match[2])}</li>`);
+                            i += 1;
+                        }
+                        blocks.push(`<${isOrdered ? "ol" : "ul"}>${items.join("")}</${isOrdered ? "ol" : "ul"}>`);
+                        continue;
+                    }
+
+                    const paragraph = [];
+                    while (i < lines.length) {
+                        const current = lines[i];
+                        if (!current.trim()) break;
+                        if (
+                            /^#\s+/.test(current) ||
+                            /^(\s*)[-*+]\s+.+$/.test(current) ||
+                            /^(\s*)\d+\.\s+.+$/.test(current)
+                        ) {
+                            break;
+                        }
+                        paragraph.push(current);
+                        i += 1;
+                    }
+
+                    if (!paragraph.length) {
+                        i += 1;
+                        continue;
+                    }
+
+                    blocks.push(
+                        `<p>${paragraph.map((part) => markdownInlineToHtml(part)).join("<br>")}</p>`,
+                    );
+                }
+
+                return blocks.join("");
+            }
+
+            function serializeInlineNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return (node.nodeValue || "").replace(/\u00a0/g, " ");
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+                const tag = node.tagName.toLowerCase();
+                const children = Array.from(node.childNodes)
+                    .map(serializeInlineNode)
+                    .join("");
+
+                switch (tag) {
+                    case "br":
+                        return "\n";
+                    case "strong":
+                    case "b":
+                        return `**${children}**`;
+                    case "em":
+                    case "i":
+                        return `*${children}*`;
+                    case "code":
+                        return `\`${children}\``;
+                    default:
+                        return children;
+                }
+            }
+
+            function isBlockMarkdownTag(tag) {
+                return tag === "h1" || tag === "p" || tag === "div" || tag === "ul" || tag === "ol" || tag === "li";
+            }
+
+            function serializeListItemNode(node, ordered, index) {
+                const parts = Array.from(node.childNodes).map(serializeBlockNode);
+                const text = parts.join("").replace(/\r\n/g, "\n").trim();
+                if (!text) return "";
+
+                const lines = text.split("\n");
+                const prefix = ordered ? `${index + 1}. ` : "- ";
+                const body = [prefix + lines[0]];
+                for (let i = 1; i < lines.length; i += 1) {
+                    body.push(`  ${lines[i]}`);
+                }
+                return body.join("\n") + "\n";
+            }
+
+            function serializeBlockNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return (node.nodeValue || "").replace(/\u00a0/g, " ");
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+                const tag = node.tagName.toLowerCase();
+                if (tag === "br") return "\n";
+
+                if (tag === "h1") {
+                    const inner = Array.from(node.childNodes).map(serializeInlineNode).join("").trim();
+                    return `# ${inner}\n`;
+                }
+
+                if (tag === "li") {
+                    const inner = Array.from(node.childNodes).map(serializeInlineNode).join("").trim();
+                    return inner ? `- ${inner}\n` : "";
+                }
+
+                if (tag === "p") {
+                    const inner = Array.from(node.childNodes).map(serializeInlineNode).join("").trim();
+                    return `${inner}\n`;
+                }
+
+                if (tag === "div") {
+                    const childTags = Array.from(node.childNodes)
+                        .filter((child) => child.nodeType === Node.ELEMENT_NODE)
+                        .map((child) => child.tagName.toLowerCase());
+                    if (childTags.some(isBlockMarkdownTag)) {
+                        return Array.from(node.childNodes).map(serializeBlockNode).join("");
+                    }
+                    const inner = Array.from(node.childNodes).map(serializeInlineNode).join("").trim();
+                    return `${inner}\n`;
+                }
+
+                if (tag === "ul" || tag === "ol") {
+                    const items = Array.from(node.children)
+                        .filter((child) => child.tagName && child.tagName.toLowerCase() === "li")
+                        .map((li, index) => serializeListItemNode(li, tag === "ol", index))
+                        .filter(Boolean);
+                    return items.join("");
+                }
+
+                return Array.from(node.childNodes).map(serializeBlockNode).join("");
+            }
+
+            function editorHtmlToMarkdown(root) {
+                const text = Array.from(root.childNodes)
+                    .map(serializeBlockNode)
+                    .join("")
+                    .replace(/\r\n/g, "\n")
+                    .replace(/\u00a0/g, " ");
+
+                return text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+            }
+
+            function setEditorMarkdown(editor, markdown) {
+                if (!editor) return;
+                editor.innerHTML = markdownBlocksToHtml(markdown || "");
+            }
+
+            function getEditorMarkdown(editor) {
+                if (!editor) return "";
+                return editorHtmlToMarkdown(editor);
+            }
+
+            function bindRichEditor(root) {
+                const surface = root.querySelector(".rich-editor-surface");
+                if (!surface) return;
+
+                root.querySelectorAll("[data-md-command]").forEach((btn) => {
+                    btn.addEventListener("pointerdown", (e) => {
+                        e.preventDefault();
+                        surface.focus();
+                        const command = btn.dataset.mdCommand;
+                        if (command === "bold") {
+                            document.execCommand("bold");
+                        } else if (command === "italic") {
+                            document.execCommand("italic");
+                        } else if (command === "clear") {
+                            document.execCommand("removeFormat");
+                        } else if (command === "h1") {
+                            document.execCommand("formatBlock", false, "h1");
+                        } else if (command === "ul") {
+                            document.execCommand("insertUnorderedList");
+                        } else if (command === "ol") {
+                            document.execCommand("insertOrderedList");
+                        }
+                        surface.dispatchEvent(new Event("input", { bubbles: true }));
+                    });
+                });
+
+                surface.addEventListener("paste", (e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData?.getData("text/plain") || "";
+                    document.execCommand("insertText", false, text);
+                });
+
+                surface.addEventListener("keydown", (e) => {
+                    if (!(e.ctrlKey || e.metaKey)) return;
+                    if (e.key.toLowerCase() === "b") {
+                        e.preventDefault();
+                        document.execCommand("bold");
+                    }
+                    if (e.key.toLowerCase() === "i") {
+                        e.preventDefault();
+                        document.execCommand("italic");
+                    }
+                });
+            }
+
+            function renderTaskTitle(title) {
+                return markdownBlocksToHtml(title || "");
+            }
+
+            function renderTaskTitleCompact(title) {
+                return esc(markdownToPlainText(title));
+            }
+
+            function renderCommentContent(content) {
+                return markdownBlocksToHtml(content || "");
+            }
+
+            function commentAuthorName(comment) {
+                if (!comment.author_id) return "Anonyme";
+                const user = USERS.find((u) => u.id === comment.author_id);
+                return user ? user.name : "Anonyme";
+            }
+
+            function commentAuthorUser(comment) {
+                if (!comment.author_id) return null;
+                return USERS.find((u) => u.id === comment.author_id) || null;
+            }
+
+            function commentAvatarLabel(comment) {
+                const user = commentAuthorUser(comment);
+                const name = user?.name || "Anonyme";
+                return name.trim().charAt(0).toUpperCase() || "?";
+            }
+
+            function commentAvatarColor(comment) {
+                return commentAuthorUser(comment)?.color || "var(--accent)";
+            }
+
+            function formatCommentDate(value) {
+                if (!value) return "";
+                try {
+                    return new Intl.DateTimeFormat("fr-FR", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                    }).format(new Date(value));
+                } catch {
+                    return value;
+                }
+            }
+
+            function renderCommentItem(comment) {
+                const author = commentAuthorName(comment);
+                const stamp = formatCommentDate(comment.created_at);
+                return `
+          <div class="comment-item">
+            <div class="comment-item-head">
+              <div class="comment-author">${esc(author)}</div>
+              <div class="comment-date">${esc(stamp)}</div>
+            </div>
+            <div class="comment-content">${renderCommentContent(comment.content)}</div>
+          </div>`;
+            }
+
+            function markdownToPlainText(text) {
+                return (text || "")
+                    .replace(/^#{1,6}\s+/gm, "")
+                    .replace(/^\s*[-*+]\s+/gm, "")
+                    .replace(/^\s*\d+\.\s+/gm, "")
+                    .replace(/`([^`]+)`/g, "$1")
+                    .replace(/\*\*([\s\S]+?)\*\*/g, "$1")
+                    .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, "$1$2")
+                    .replace(/(^|[^_])_([^_\n]+?)_(?!_)/g, "$1$2")
+                    .replace(/\n+/g, " ")
+                    .trim();
+            }
+
+            function renderCardComment(comment) {
+                const author = commentAuthorName(comment);
+                const label = commentAvatarLabel(comment);
+                const color = commentAvatarColor(comment);
+                return `
+          <button
+            type="button"
+            class="card-comment"
+            data-comment-author="${esc(author)}"
+            data-comment-stamp="${esc(formatCommentDate(comment.created_at))}"
+            data-comment-markdown="${esc(comment.content)}"
+            aria-label="Commentaire de ${esc(author)}"
+          >
+            <span class="card-comment-avatar" style="background:${color}">${esc(label)}</span>
+          </button>`;
+            }
+
+            function hideCommentTooltip() {
+                clearTimeout(commentTooltipHideTimer);
+                commentTooltipHideTimer = null;
+                const tooltip = document.getElementById("commentTooltip");
+                if (!tooltip) return;
+                tooltip.classList.remove("open");
+                tooltip.setAttribute("aria-hidden", "true");
+            }
+
+            function showCommentTooltip(anchor) {
+                clearTimeout(commentTooltipHideTimer);
+                const tooltip = document.getElementById("commentTooltip");
+                if (!tooltip || !anchor) return;
+
+                const author = anchor.dataset.commentAuthor || "Anonyme";
+                const stamp = anchor.dataset.commentStamp || "";
+                const markdown = anchor.dataset.commentMarkdown || "";
+                tooltip.innerHTML = `
+          <div class="comment-tooltip-head">
+            <strong>${esc(author)}</strong>
+            <span>${esc(stamp)}</span>
+          </div>
+          <div class="comment-tooltip-content">${renderCommentContent(markdown)}</div>
+        `;
+
+                tooltip.classList.add("open");
+                tooltip.setAttribute("aria-hidden", "false");
+                tooltip.dataset.placement = "bottom";
+                tooltip.style.left = "0px";
+                tooltip.style.top = "0px";
+                tooltip.style.visibility = "hidden";
+
+                requestAnimationFrame(() => {
+                    const anchorRect = anchor.getBoundingClientRect();
+                    const tipRect = tooltip.getBoundingClientRect();
+                    const gap = 12;
+                    const margin = 12;
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+
+                    const spaceBelow = viewportHeight - anchorRect.bottom - gap - margin;
+                    const spaceAbove = anchorRect.top - gap - margin;
+                    const placement =
+                        spaceBelow >= tipRect.height || spaceBelow >= spaceAbove
+                            ? "bottom"
+                            : "top";
+                    let top =
+                        placement === "bottom"
+                            ? anchorRect.bottom + gap
+                            : anchorRect.top - tipRect.height - gap;
+                    top = Math.max(margin, Math.min(top, viewportHeight - tipRect.height - margin));
+
+                    let left =
+                        anchorRect.left + anchorRect.width / 2 - tipRect.width / 2;
+                    left = Math.max(margin, Math.min(left, viewportWidth - tipRect.width - margin));
+
+                    const arrowX = Math.max(
+                        18,
+                        Math.min(
+                            anchorRect.left + anchorRect.width / 2 - left,
+                            tipRect.width - 18,
+                        ),
+                    );
+
+                    tooltip.dataset.placement = placement;
+                    tooltip.style.setProperty("--comment-tooltip-arrow-x", `${arrowX}px`);
+                    tooltip.style.left = `${left}px`;
+                    tooltip.style.top = `${top}px`;
+                    tooltip.style.visibility = "visible";
+                });
+            }
+
+            async function saveExport(format) {
+                try {
+                    const result = await apiJson(`/api/export/${format}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                    });
+                    setExportStatus(`Exported to ${result.path}`);
+                } catch (err) {
+                    setExportStatus(
+                        err?.message || "Export failed",
+                        "error",
+                    );
+                }
+            }
+
+            function downloadExport(format) {
+                const ext = format === "json" ? "json" : "md";
+                const link = document.createElement("a");
+                link.href = `/api/export/${format}/download`;
+                link.download = `kb-export.${ext}`;
+                link.rel = "noopener";
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setExportStatus(`Download started: kb-export.${ext}`);
             }
 
             const COLUMNS = [
@@ -478,11 +1102,95 @@
                 done: "Done",
             };
 
+            function splitTagsInput(value) {
+                return value
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter(Boolean);
+            }
+
+            function normalizeTagKey(tag) {
+                return tag.trim().toLowerCase();
+            }
+
+            function tagsMatchFilter(tags, filter) {
+                if (!filter) return true;
+                return tags.some((tag) => normalizeTagKey(tag) === filter);
+            }
+
+            function renderTagChips(tags, className = "card-tag", clickable = false) {
+                if (!tags || !tags.length) return "";
+                return tags
+                    .map(
+                        (tag) => `
+          <${clickable ? "button" : "span"}
+            ${clickable ? 'type="button"' : ""}
+            class="${className}"
+            data-tag="${esc(tag)}"
+          >${esc(tag)}</${clickable ? "button" : "span"}>`,
+                    )
+                    .join("");
+            }
+
+            function setTagFilter(tag) {
+                activeTagFilter = tag ? normalizeTagKey(tag) : "";
+                renderTagFilters();
+                renderBoard();
+            }
+
+            function renderTagFilters() {
+                const wrap = document.getElementById("tagFilters");
+                if (!wrap) return;
+
+                const counts = new Map();
+                TASKS.filter((task) => !task.is_trash).forEach((task) => {
+                    (task.tags || []).forEach((tag) => {
+                        const key = normalizeTagKey(tag);
+                        if (!key) return;
+                        if (!counts.has(key)) {
+                            counts.set(key, { label: tag.trim(), count: 0 });
+                        }
+                        counts.get(key).count += 1;
+                    });
+                });
+
+                const tags = Array.from(counts.entries()).sort((a, b) => {
+                    if (b[1].count !== a[1].count) return b[1].count - a[1].count;
+                    return a[1].label.localeCompare(b[1].label);
+                });
+
+                wrap.innerHTML = `
+      <button class="tag-filter ${!activeTagFilter ? "active" : ""}" data-filter="">All</button>
+      ${
+          tags.length
+              ? tags
+                    .map(
+                        ([key, meta]) => `
+        <button class="tag-filter ${activeTagFilter === key ? "active" : ""}" data-filter="${esc(key)}">
+          ${esc(meta.label)} <span class="tag-filter-count">${meta.count}</span>
+        </button>`,
+                    )
+                    .join("")
+              : '<span class="tag-filter-empty">No tags yet.</span>'
+      }
+    `;
+
+                wrap.querySelectorAll("[data-filter]").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        setTagFilter(btn.dataset.filter || "");
+                    });
+                });
+            }
+
             function renderBoard() {
                 const board = document.getElementById("board");
                 board.innerHTML = "";
                 COLUMNS.forEach((col) => {
-                    const tasks = TASKS.filter((t) => t.status === col.id);
+                    const tasks = TASKS.filter(
+                        (t) =>
+                            t.status === col.id &&
+                            tagsMatchFilter(t.tags || [], activeTagFilter),
+                    );
                     const colEl = document.createElement("div");
                     colEl.className = "column";
                     colEl.dataset.column = col.id;
@@ -512,10 +1220,21 @@
                     task.assigned.includes(u.id),
                 );
                 const extraCount = task.assigned.length - 4;
+                const tagList = task.tags || [];
+                const comments = COMMENTS.filter(
+                    (comment) => comment.task_id === task.id,
+                ).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                const visibleComments = comments.slice(-4);
+                const hiddenCommentCount = comments.length - visibleComments.length;
 
                 card.innerHTML = `
     <div class="card-body">
-      <div class="card-title">${esc(task.title)}</div>
+      <div class="card-title">${renderTaskTitle(task.title)}</div>
+      ${
+          tagList.length
+              ? `<div class="card-tags">${renderTagChips(tagList)}</div>`
+              : ""
+      }
       <div class="card-meta">
         <span class="priority priority-${task.priority}">
           <span class="priority-dot"></span>${task.priority === "high" ? "High" : task.priority === "medium" ? "Medium" : "Low"}
@@ -543,6 +1262,26 @@
       </div>`
               : ""
       }
+      ${
+          comments.length
+              ? `
+      <div class="card-comments" aria-label="Commentaires">
+        <span class="card-comments-icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 15.5 3.5 17V6.5A2.5 2.5 0 0 1 6 4h8A2.5 2.5 0 0 1 16.5 6.5v4A2.5 2.5 0 0 1 14 13h-5l-3 2.5z" />
+          </svg>
+        </span>
+        <div class="card-comments-avatars">
+          ${visibleComments.map((comment) => renderCardComment(comment)).join("")}
+        </div>
+        ${
+            hiddenCommentCount > 0
+                ? `<span class="card-comment-more" title="${hiddenCommentCount} commentaires supplémentaires">+${hiddenCommentCount}</span>`
+                : ""
+        }
+      </div>`
+              : ""
+      }
     </div>
   `;
 
@@ -553,6 +1292,25 @@
                         deleteTask(task.id);
                     },
                 );
+
+                card.querySelectorAll(".card-comment").forEach((commentEl) => {
+                    commentEl.addEventListener("pointerenter", () => {
+                        showCommentTooltip(commentEl);
+                    });
+                    commentEl.addEventListener("pointerleave", () => {
+                        hideCommentTooltip();
+                    });
+                    commentEl.addEventListener("focus", () => {
+                        showCommentTooltip(commentEl);
+                    });
+                    commentEl.addEventListener("blur", () => {
+                        hideCommentTooltip();
+                    });
+                    commentEl.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
 
                 card.addEventListener("dragstart", (e) => {
                     e.dataTransfer.setData("text/plain", task.id);
@@ -631,12 +1389,13 @@
                 await loadData();
             }
 
-            async function addTask(title, priority, assigned) {
+            async function addTask(title, priority, tags, assigned) {
                 await apiJson("/api/add", {
                     method: "POST",
                     body: JSON.stringify({
                         title,
                         priority,
+                        tags,
                         assigned_to: assigned,
                     }),
                     headers: { "Content-Type": "application/json" },
@@ -651,6 +1410,10 @@
             function closeModal(id) {
                 document.getElementById(id).classList.remove("open");
             }
+
+            document.querySelectorAll("[data-rich-editor]").forEach(bindRichEditor);
+            setEditorMarkdown(document.getElementById("taskTitleEditor"), "");
+            setEditorMarkdown(document.getElementById("editTaskTitleEditor"), "");
 
             document.querySelectorAll(".modal-overlay").forEach((overlay) => {
                 overlay.addEventListener("click", (e) => {
@@ -676,10 +1439,12 @@
             document
                 .getElementById("addTaskBtn")
                 .addEventListener("click", () => {
-                    document.getElementById("taskTitle").value = "";
+                    setEditorMarkdown(document.getElementById("taskTitleEditor"), "");
                     document.getElementById("taskPriority").value = "medium";
+                    document.getElementById("taskTags").value = "";
                     updateAssignOptions();
                     openModal("addModal");
+                    document.getElementById("taskTitleEditor").focus();
                 });
             document
                 .getElementById("usersBtn")
@@ -698,17 +1463,20 @@
             document
                 .getElementById("addModalSave")
                 .addEventListener("click", () => {
-                    const title = document
-                        .getElementById("taskTitle")
-                        .value.trim();
+                    const title = getEditorMarkdown(
+                        document.getElementById("taskTitleEditor"),
+                    );
                     if (!title) return;
                     const priority =
                         document.getElementById("taskPriority").value;
+                    const tags = splitTagsInput(
+                        document.getElementById("taskTags").value,
+                    );
                     const select = document.getElementById("taskAssign");
                     const assigned = Array.from(select.selectedOptions).map(
                         (o) => o.value,
                     );
-                    addTask(title, priority, assigned);
+                    addTask(title, priority, tags, assigned);
                     closeModal("addModal");
                 });
 
@@ -822,7 +1590,7 @@
                 list.innerHTML = TRASH.map(
                     (t) => `
     <div class="trash-item">
-      <span>${esc(t.title)}</span>
+      <span>${renderTaskTitleCompact(t.title)}</span>
       <div style="display:flex;gap:6px;flex-shrink:0;">
         <button class="btn btn-sm" data-restore="${t.id}">Restore</button>
       </div>
@@ -882,11 +1650,14 @@
             }
 
             async function saveTaskUpdate(taskId) {
-                const title = document
-                    .getElementById("editTaskTitle")
-                    .value.trim();
+                const title = getEditorMarkdown(
+                    document.getElementById("editTaskTitleEditor"),
+                );
                 const priority =
                     document.getElementById("editTaskPriority").value;
+                const tags = splitTagsInput(
+                    document.getElementById("editTaskTags").value,
+                );
                 const due = document.getElementById("editTaskDue").value.trim();
 
                 if (!title) return;
@@ -898,6 +1669,7 @@
                         id: taskId,
                         title,
                         priority,
+                        tags,
                         due_date: due,
                     }),
                 });
@@ -914,14 +1686,18 @@
                 if (!task) return;
 
                 editingTaskId = taskId;
-                document.getElementById("editTaskTitle").value = task.title;
+                setEditorMarkdown(
+                    document.getElementById("editTaskTitleEditor"),
+                    task.title,
+                );
                 document.getElementById("editTaskPriority").value =
                     task.priority;
+                document.getElementById("editTaskTags").value = (task.tags || []).join(", ");
                 document.getElementById("editTaskDue").value = task.due_date
                     ? task.due_date.slice(0, 10)
                     : "";
                 openModal("editModal");
-                document.getElementById("editTaskTitle").focus();
+                document.getElementById("editTaskTitleEditor").focus();
             }
 
             function closeEditModal() {
@@ -1004,6 +1780,19 @@
             initTheme();
 
             document
+                .getElementById("exportJsonBtn")
+                .addEventListener("click", () => saveExport("json"));
+            document
+                .getElementById("exportMdBtn")
+                .addEventListener("click", () => saveExport("md"));
+            document
+                .getElementById("downloadJsonBtn")
+                .addEventListener("click", () => downloadExport("json"));
+            document
+                .getElementById("downloadMdBtn")
+                .addEventListener("click", () => downloadExport("md"));
+
+            document
                 .getElementById("themeToggle")
                 .addEventListener("click", async () => {
                     const html = document.documentElement;
@@ -1062,6 +1851,10 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span>Find by <strong>priority</strong> (High, Medium, Low)</span>
         </div>
+        <div class="search-hint-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 10l-8 8-8-8 8-8z"/><circle cx="12" cy="10" r="2"/></svg>
+          <span>Filter by <strong>tag</strong> or label</span>
+        </div>
       </div>
     `;
                     return;
@@ -1084,6 +1877,9 @@
                         (t.priority === "low" && (q === "Low" || q === "bas"))
                     )
                         return true;
+                    if ((t.tags || []).some((tag) => tag.toLowerCase().includes(q))) {
+                        return true;
+                    }
                     const assignedUsers = USERS.filter((u) =>
                         t.assigned.includes(u.id),
                     );
@@ -1114,6 +1910,7 @@
                                 : t.priority === "medium"
                                   ? "Medium"
                                   : "Low";
+                        const tagList = t.tags || [];
 
                         const statusIcon =
                             t.status === "todo"
@@ -1124,11 +1921,16 @@
 
                         return `
       <div class="search-item" data-id="${t.id}">
-        <span class="search-item-title">${highlightText(t.title, query)}</span>
+        <span class="search-item-title">${renderTaskTitleCompact(t.title)}</span>
         <div class="search-item-meta">
           <span class="priority priority-${t.priority}">
             <span class="priority-dot"></span>${priorityLabel}
           </span>
+          ${
+              tagList.length
+                  ? `<span class="search-item-tags">${renderTagChips(tagList, "search-tag")}</span>`
+                  : ""
+          }
           <span class="search-item-status" data-status="${t.status}">${statusIcon}${statusLabel}</span>
           ${
               assignedUsers.length
@@ -1237,7 +2039,7 @@
           </span>
           ${statusIcon}
         </div>
-        <div class="ft-body">${esc(t.title)}</div>
+        <div class="ft-body">${renderTaskTitleCompact(t.title)}</div>
         ${
             assignedUsers.length
                 ? `
@@ -1280,6 +2082,10 @@
                 const assignedUsers = USERS.filter((u) =>
                     task.assigned.includes(u.id),
                 );
+                const tagList = task.tags || [];
+                const comments = COMMENTS.filter((comment) => comment.task_id === task.id).sort(
+                    (a, b) => new Date(a.created_at) - new Date(b.created_at),
+                );
                 const statusLabel = STATUS_NAMES[task.status];
                 const priorityLabel =
                     task.priority === "high"
@@ -1297,7 +2103,7 @@
 
                 document.getElementById("heroCover").innerHTML = `
     <div class="hero-cover-top">
-      <h3 class="hero-title">${esc(task.title)}</h3>
+      <div class="hero-title">${renderTaskTitle(task.title)}</div>
       <button
         class="btn btn-sm btn-ghost hero-edit-btn"
         id="heroOpenEdit"
@@ -1319,6 +2125,17 @@
   `;
 
                 document.getElementById("heroBody").innerHTML = `
+    ${
+        tagList.length
+            ? `
+    <div class="hero-section">
+      <h4>Tags</h4>
+      <div class="hero-tags">
+        ${renderTagChips(tagList, "hero-tag", true)}
+      </div>
+    </div>`
+            : ""
+    }
     ${
         assignedUsers.length
             ? `
@@ -1351,6 +2168,34 @@
       <select id="heroTaskAssign" multiple></select>
       <div class="hero-help">Ctrl/Cmd + click for multi-select</div>
     </div>
+    <div class="hero-section hero-comments">
+      <div class="hero-section-head">
+        <h4>Commentaires</h4>
+        <span class="comment-count">${comments.length}</span>
+      </div>
+      <div class="comment-list">
+        ${
+            comments.length
+                ? comments.map((comment) => renderCommentItem(comment)).join("")
+                : '<div class="comment-empty">Aucun commentaire pour cette tâche.</div>'
+        }
+      </div>
+      <form class="comment-form" id="heroCommentForm">
+        <div class="comment-form-row">
+          <select id="heroCommentAuthor" aria-label="Auteur du commentaire">
+            <option value="">Anonyme</option>
+            ${USERS.map((u) => `<option value="${u.id}">${esc(u.name)}</option>`).join("")}
+          </select>
+          <button class="btn btn-primary btn-sm" type="submit">Ajouter</button>
+        </div>
+        <textarea
+          id="heroCommentContent"
+          rows="4"
+          placeholder="Ajouter un commentaire..."
+        ></textarea>
+      </form>
+      <div class="comment-status" id="heroCommentStatus"></div>
+    </div>
   `;
 
                 fillUserSelect(
@@ -1369,9 +2214,58 @@
                             document.getElementById("heroTaskAssign");
                         await saveTaskAssignment(currentHeroTaskId, select);
                     });
+                const commentAuthor = document.getElementById("heroCommentAuthor");
+                if (commentAuthor) {
+                    commentAuthor.value = selectedCommentAuthorId || "";
+                    commentAuthor.addEventListener("change", () => {
+                        selectedCommentAuthorId = commentAuthor.value;
+                    });
+                }
+                document
+                    .getElementById("heroCommentForm")
+                    .addEventListener("submit", async (e) => {
+                        e.preventDefault();
+                        const content = document
+                            .getElementById("heroCommentContent")
+                            .value.trim();
+                        const authorId = document.getElementById("heroCommentAuthor").value;
+                        const statusEl = document.getElementById("heroCommentStatus");
+                        if (!content) return;
+                        try {
+                            if (statusEl) {
+                                statusEl.textContent = "Envoi en cours...";
+                                delete statusEl.dataset.state;
+                            }
+                            await apiJson("/api/comments", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    task_id: currentHeroTaskId,
+                                    content,
+                                    author_id: authorId || null,
+                                }),
+                            });
+                            selectedCommentAuthorId = authorId || "";
+                            await loadData();
+                        } catch (err) {
+                            console.error("Comment save failed:", err);
+                            if (statusEl) {
+                                statusEl.textContent = err?.message || "Impossible d'ajouter le commentaire.";
+                                statusEl.dataset.state = "error";
+                            }
+                        }
+                    });
+                document.querySelectorAll(".hero-tag").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        setTagFilter(btn.dataset.tag || "");
+                    });
+                });
 
                 document.getElementById("heroOverlay").classList.add("open");
             }
+
+            window.addEventListener("scroll", hideCommentTooltip, true);
+            window.addEventListener("resize", hideCommentTooltip);
 
             document
                 .getElementById("heroOverlay")
@@ -1397,6 +2291,19 @@
                 d.textContent = str;
                 return d.innerHTML;
             }
+
+            let liveReloadSource = null;
+            function setupLiveReload() {
+                if (liveReloadSource || !window.EventSource) return;
+                liveReloadSource = new EventSource("/api/events");
+                liveReloadSource.addEventListener("reload", () => {
+                    loadData().catch((err) =>
+                        console.error("Dashboard reload failed:", err),
+                    );
+                });
+            }
+
+            setupLiveReload();
 
             loadData().catch((err) =>
                 console.error("Dashboard load failed:", err),

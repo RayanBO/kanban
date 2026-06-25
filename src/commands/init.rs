@@ -1,11 +1,11 @@
 use std::io::{self, Write};
 
 use crate::models::{Config, Store};
-use crate::store::{is_initialized, kanban_path, save, save_config};
+use crate::store::{data_path, is_initialized, save};
 
 pub fn run(use_trash: Option<bool>, _no_init_dashboard: bool) -> Result<(), String> {
     if is_initialized() {
-        return Err("kanban.md existe déjà dans ce dossier.".to_string());
+        return Err("kb-data.yaml existe déjà dans ce dossier.".to_string());
     }
 
     let interactive = use_trash.is_none();
@@ -27,10 +27,10 @@ pub fn run(use_trash: Option<bool>, _no_init_dashboard: bool) -> Result<(), Stri
         config.use_trash = v;
     }
 
-    let store = Store::default();
+    let mut store = Store::default();
+    store.config = config;
     save(&store)?;
-    save_config(&config)?;
 
-    println!("Kanban initialisé → {}", kanban_path().display());
+    println!("Kanban initialisé → {}", data_path().display());
     Ok(())
 }
