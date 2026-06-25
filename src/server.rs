@@ -12,7 +12,7 @@ use axum::{
     http::{header, Response, StatusCode},
     response::IntoResponse,
     response::sse::{Event, KeepAlive, Sse},
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use serde::Deserialize;
@@ -336,13 +336,13 @@ async fn api_users(State(state): State<Arc<AppState>>) -> impl IntoResponse {
 
 async fn api_comments(
     State(state): State<Arc<AppState>>,
-    AxumPath(task_id): AxumPath<String>,
+    AxumPath(id): AxumPath<String>,
 ) -> impl IntoResponse {
     let store = state.store.lock().unwrap();
     let comments: Vec<Comment> = store
         .comments
         .iter()
-        .filter(|comment| comment.task_id == task_id)
+        .filter(|comment| comment.task_id == id)
         .cloned()
         .collect();
     Json(comments).into_response()
@@ -598,7 +598,7 @@ pub async fn run_server(port: u16, watch: bool) -> Result<(), String> {
         .route("/task-update", post(api_task_update))
         .route("/del", post(api_del))
         .route("/users", get(api_users).post(api_user_add).put(api_user_update).delete(api_user_delete))
-        .route("/comments/{task_id}", get(api_comments))
+        .route("/comments/{id}", get(api_comments).delete(api_comment_delete))
         .route("/comments", post(api_comment_add))
         .route("/task-assign", post(api_task_assign))
         .route("/folder", get(api_folder))
@@ -673,6 +673,22 @@ fn guess_ct(path: &str) -> &'static str {
         Some("woff") => "font/woff",
         Some("ttf") => "font/ttf",
         Some("txt") => "text/plain; charset=utf-8",
-        _ => "application/octet-stream",
+        _ =>         "application/octet-stream",
     }
+}
+
+async fn api_comment_delete(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<String>,
+) -> impl IntoResponse {
+    let mut s = state.store.lock().unwrap();
+    let initial_len = s.comments.len();
+    s.comments.retain(|c| c.id != id);
+    if s.comments.len() == initial_len {
+        return (StatusCode::NOT_FOUND, Json(json!({"error": "Commentaire introuvable"}))).into_response();
+    }
+    if let Err(e) = store::save(&s) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
+    }
+    Json(json!({"ok": true})).into_response()
 }

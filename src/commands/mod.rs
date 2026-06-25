@@ -1,5 +1,6 @@
 pub mod add;
 pub mod assign;
+pub mod comment;
 pub mod config;
 pub mod dashboard;
 pub mod export;

@@ -1742,6 +1742,37 @@ body {
     white-space: nowrap;
 }
 
+.comment-del-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s, color .15s, background .15s;
+    flex-shrink: 0;
+}
+
+.comment-item:hover .comment-del-btn {
+    opacity: 1;
+}
+
+.comment-del-btn:hover {
+    color: var(--rose);
+    background: var(--surface);
+}
+
+.comment-del-btn:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
 .comment-content {
     display: flex;
     flex-direction: column;

@@ -1,6 +1,6 @@
 version: 1
 config:
-  use_trash: false
+  use_trash: true
   theme_dashboard: dark
 tasks:
 - id: 27135178-ec5c-454e-84e4-b1920e7b32e1
@@ -139,7 +139,7 @@ tasks:
 - id: b90fab5d-7a73-4ef7-ba5a-76d8de139f8d
   title: convertire le contenue des titre (task) en une contenu markdown / donc dans le conde on doit avoir une bonne contenu bien stoquer sans confusion , et ici dans dashboard on doit avoir un mini editor de markdown
   priority: high
-  status: in-progress
+  status: done
   assigned_to: []
   tags: []
   created_at: 2026-06-24T15:27:24.429661400Z

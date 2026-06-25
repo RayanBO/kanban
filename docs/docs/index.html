@@ -307,6 +307,8 @@
           <a href="#move">move</a>
           <a href="#assign">assign</a>
           <a href="#del">del</a>
+          <a href="#comment" class="toc-sub">comment add</a>
+          <a href="#comment" class="toc-sub">comment del</a>
           <a href="#user" class="toc-sub">user add</a>
           <a href="#user" class="toc-sub">user put</a>
           <a href="#user" class="toc-sub">user del</a>
@@ -493,6 +495,39 @@
           </table>
           <span class="cmd-example"><span class="prompt">$</span> kb del a1b2c3d4</span>
           <span class="cmd-example"><span class="comment"># &#8594; Moves to trash (use_trash: true)</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- comment -->
+      <div class="cmd-group" id="comment">
+        <h2>kb comment</h2>
+
+        <div class="cmd-block">
+          <div class="cmd-name">comment add</div>
+          <div class="cmd-desc">Add a comment to a task. Requires a task UUID and text content. Optionally set the author.</div>
+          <div class="cmd-syntax">kb comment add &lt;task_id&gt; &lt;content&gt; [--author-id &lt;id&gt;]</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>task_id</td><td>yes</td><td>UUID of the task to comment on.</td></tr>
+            <tr><td>content</td><td>yes</td><td>Comment text (positional, wrap in quotes).</td></tr>
+            <tr><td>--author-id</td><td>no</td><td>UUID of the user posting the comment.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb comment add a1b2c3d4 "Nice work!" --author-id u1v2w3x4</span>
+          <span class="cmd-example"><span class="comment"># → Commentaire ajouté: &lt;comment-id&gt;</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+
+        <div class="cmd-block">
+          <div class="cmd-name">comment del</div>
+          <div class="cmd-desc">Delete a comment by its UUID.</div>
+          <div class="cmd-syntax">kb comment del &lt;id&gt;</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>id</td><td>yes</td><td>UUID of the comment to delete.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="prompt">$</span> kb comment del c0mment1d</span>
+          <span class="cmd-example"><span class="comment"># → Commentaire supprimé: c0mment1d</span></span>
           <a href="#" class="top-link">&#8593; Top</a>
         </div>
       </div>

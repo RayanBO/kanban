@@ -126,6 +126,12 @@ enum Command {
         task_id: String,
     },
 
+    /// Gérer les commentaires
+    Comment {
+        #[command(subcommand)]
+        action: CommentAction,
+    },
+
     /// Gérer la configuration
     Config {
         #[arg(long = "set", value_name = "KEY=VALUE")]
@@ -147,6 +153,21 @@ enum Command {
     Dashboard {
         #[arg(long)]
         watch: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum CommentAction {
+    /// Ajouter un commentaire à une tâche
+    Add {
+        task_id: String,
+        content: String,
+        #[arg(long)]
+        author_id: Option<String>,
+    },
+    /// Supprimer un commentaire par son ID
+    Del {
+        id: String,
     },
 }
 
@@ -292,6 +313,15 @@ fn main() {
         Command::Tags => commands::tags::run(),
 
         Command::Del { task_id } => commands::del::run(&task_id),
+
+        Command::Comment { action } => match action {
+            CommentAction::Add { task_id, content, author_id } => {
+                commands::comment::add(&task_id, &content, author_id.as_deref())
+            }
+            CommentAction::Del { id } => {
+                commands::comment::del(&id)
+            }
+        },
 
         Command::Config { set } => {
             let pairs: Vec<(String, String)> = set

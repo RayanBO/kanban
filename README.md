@@ -48,6 +48,8 @@ kb user add "username" [--pic "path/image"]
 kb user put "user-id" [--username "new"] [--pic "new/path"]
 kb user del "user-id"
 kb user show
+kb comment add "task-id" "Comment text" --author-id "user-id"
+kb comment del "comment-id"
 kb config
 kb config --set theme_dashboard=light
 kb config --set use_trash=false
@@ -81,6 +83,9 @@ kb data (legacy alias for `kb export --json`)
 | `/api/add` | POST | Create task |
 | `/api/del` | POST | Delete task |
 | `/api/users` | GET/POST/PUT/DELETE | User CRUD |
+| `/api/comments/{task_id}` | GET | List comments for a task |
+| `/api/comments` | POST | Add a comment |
+| `/api/comments/{id}` | DELETE | Delete a comment |
 | `/api/task-assign` | POST | Replace task assignees |
 | `/api/task-update` | POST | Edit task title, priority, tags, or due date |
 | `/api/export/{format}` | POST | Export board data to `.kanban/kb-export.json` or `.md` |
