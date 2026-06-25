@@ -79,7 +79,7 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
-          $ver = Select-String -Path Cargo.toml -Pattern 'version = "(.*)"' | ForEach-Object { $_.Matches.Groups[1].Value }
+          $ver = Select-String -Path Cargo.toml -Pattern '^version = "(\d+\.\d+\.\d+)"' | ForEach-Object { $_.Matches.Groups[1].Value }
           New-Item -ItemType Directory -Force -Path target\wix | Out-Null
           .\wix\candle.exe -dVersion="$ver" -dBinaryPath="$pwd\target\release\kb.exe" -out target\wix\kb.wixobj wix\main.wxs
           .\wix\light.exe -cultures:null -out "target\wix\kb-$ver.msi" target\wix\kb.wixobj
