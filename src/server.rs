@@ -216,7 +216,7 @@ async fn api_user_delete(State(state): State<Arc<AppState>>, Json(body): Json<Id
     }
     s.users.retain(|u| u.id != body.id);
     for task in s.tasks.iter_mut() {
-        task.assigned_to.retain(|uid| uid != body.id);
+        task.assigned_to.retain(|uid| *uid != body.id);
     }
     if let Err(e) = store::save(&s) {
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
