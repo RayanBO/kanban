@@ -623,8 +623,13 @@
         </div>
         <div class="feature-card">
           <div class="feature-icon">▸</div>
-          <h3>Markdown Native</h3>
-          <p>Your board is a single YAML data file with tasks, users, config, and future comments. Version control friendly and easy to extend.</p>
+          <h3>Tags &amp; Due Dates</h3>
+          <p>Label tasks with tags, set due dates, and filter by priority, status, or labels. The dashboard has a tag-based filter and a collapsible task panel.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">▸</div>
+          <h3>Comments &amp; Export</h3>
+          <p>Add Markdown comments to any task, export your board as JSON or Markdown, and track changes with full comment history.</p>
         </div>
       </div>
     </div>
@@ -767,16 +772,22 @@
         ]
       },
       {
-        cmd: 'kb add "Ship v2.0" --priority high --to @rayan',
+        cmd: 'kb add "Ship v2.0" --priority high --to @rayan --tag frontend',
         outputs: [
           { text: '  ✓ Task added · #f7e2a1', success: true }
         ]
       },
       {
-        cmd: 'kb list',
+        cmd: 'kb tags',
+        outputs: [
+          { text: '  frontend  1', success: false }
+        ]
+      },
+      {
+        cmd: 'kb list --tag frontend',
         outputs: [
           { text: '  TODO', success: false },
-          { text: '    Ship v2.0  ●●●  high', success: false }
+          { text: '    Ship v2.0  ●●●  high  frontend', success: false }
         ]
       },
       {
@@ -797,7 +808,7 @@
 
     const demoCommands = [
       {
-        cmd: 'kb add "Design authentication" --priority high --to @rayan',
+        cmd: 'kb add "Design auth" --priority high --tag frontend --due 2026-07-15',
         outputs: [
           { text: '  ✓ Task added · #a1b2c3', success: true }
         ]
@@ -809,27 +820,27 @@
         ]
       },
       {
-        cmd: 'kb add "Fix memory leak" --priority high',
+        cmd: 'kb edit a1b2c3 --tag frontend,urgent --due 2026-07-10',
         outputs: [
-          { text: '  ✓ Task added · #b7c8d9', success: true }
+          { text: '  ✓ Task a1b2c3 updated', success: true }
         ]
       },
       {
         cmd: 'kb move a1b2c3 in-progress',
         outputs: [
-          { text: '  ✓ a1b2c3 → In Progress', success: true }
-        ]
+          { text: '  ✓ a1b2c3 → In Progress', success: true ]
+        }
       },
       {
-        cmd: 'kb assign b7c8d9 --to @rayan',
+        cmd: 'kb comment add a1b2c3 "LGTM!" --author-id @rayan',
         outputs: [
-          { text: '  ✓ Assigned to @rayan', success: true }
+          { text: '  ✓ Comment added', success: true }
         ]
       },
       {
         cmd: 'kb status',
         outputs: [
-          { text: '  ● 3 tasks · 1 in progress · 33% done', success: false }
+          { text: '  ● 3 tasks · 1 in progress · 33% done · 1 comment', success: false }
         ]
       }
     ];

@@ -148,7 +148,7 @@ tasks:
 - id: 7d701c53-fc92-4223-934a-357fbd7e5b53
   title: Ajout de la Skills pour le Agent IA
   priority: high
-  status: todo
+  status: in-progress
   assigned_to:
   - 798299d4-5552-49df-83bf-074216589694
   tags: []
@@ -200,7 +200,7 @@ tasks:
     hellobb---
     okokok * **
   priority: medium
-  status: in-progress
+  status: todo
   assigned_to: []
   tags: []
   created_at: 2026-06-25T13:25:55.104351900Z
