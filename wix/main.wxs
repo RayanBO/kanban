@@ -3,6 +3,7 @@
     <Product
         Id="*"
         Name="kb"
+        Language="1033"
         Version="$(var.Version)"
         Manufacturer="Rayan Rav"
         UpgradeCode="A7B3C9D1-E2F4-5678-90AB-CDEF12345678">
