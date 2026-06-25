@@ -14,11 +14,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # Windows x64
+          # Windows x64 (pas de --target, le target natif est x86_64-pc-windows-msvc)
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: kb-windows-x64.exe
-            binary: target/x86_64-pc-windows-msvc/release/kb.exe
+            binary: target/release/kb.exe
 
           # Linux x64
           - os: ubuntu-latest
@@ -56,7 +56,12 @@ jobs:
             target
           key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Compiler
+      - name: Compiler (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: cargo build --release
+
+      - name: Compiler (cross)
+        if: matrix.target != 'x86_64-pc-windows-msvc'
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Renommer le binaire
@@ -71,7 +76,7 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: bash
         run: |
-          cargo wix build --nocapture -B target/x86_64-pc-windows-msvc/release/kb.exe
+          cargo wix build --nocapture
           cp target/wix/*.msi kb-windows-x64.msi
 
       - name: Upload artifact
