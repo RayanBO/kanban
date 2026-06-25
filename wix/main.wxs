@@ -12,6 +12,7 @@
             InstallerVersion="200"
             Compressed="yes"
             InstallScope="perMachine"
+            Platform="x64"
             Manufacturer="Rayan Rav"
             Description="kb - Kanban in your terminal" />
 
