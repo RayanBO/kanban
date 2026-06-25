@@ -3,7 +3,7 @@
     <Product
         Id="*"
         Name="kb"
-        Version="$(var.Kb.Version)"
+        Version="$(var.Version)"
         Manufacturer="Rayan Rav"
         UpgradeCode="A7B3C9D1-E2F4-5678-90AB-CDEF12345678">
 
@@ -27,7 +27,7 @@
                         <File
                             Id="kb.exe"
                             Name="kb.exe"
-                            Source="$(var.Kb.TargetPath)"
+                            Source="$(var.BinaryPath)"
                             KeyPath="yes" />
 
                         <Environment

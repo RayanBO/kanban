@@ -68,16 +68,16 @@ jobs:
         shell: bash
         run: cp ${{ matrix.binary }} ${{ matrix.artifact }}
 
-      - name: Install cargo-wix
-        if: matrix.target == 'x86_64-pc-windows-msvc'
-        run: cargo install --git https://github.com/volks73/cargo-wix.git cargo-wix
-
       - name: Build MSI
         if: matrix.target == 'x86_64-pc-windows-msvc'
-        shell: bash
+        shell: pwsh
         run: |
-          cargo wix build --nocapture -B target/release/kb.exe
-          cp target/wix/*.msi kb-windows-x64.msi
+          $ver = Select-String -Path Cargo.toml -Pattern 'version = "(.*)"' | ForEach-Object { $_.Matches.Groups[1].Value }
+          $wix = "${env:ProgramFiles(x86)}\WiX Toolset v3\bin"
+          New-Item -ItemType Directory -Force -Path target\wix | Out-Null
+          & "$wix\candle.exe" -dVersion="$ver" -dBinaryPath="$pwd\target\release\kb.exe" -out target\wix\kb.wixobj wix\main.wxs
+          & "$wix\light.exe" -out target\wix\kb-$ver.msi target\wix\kb.wixobj
+          Copy-Item "target\wix\kb-$ver.msi" kb-windows-x64.msi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
