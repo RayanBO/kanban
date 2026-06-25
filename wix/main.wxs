@@ -13,7 +13,7 @@
             Compressed="yes"
             InstallScope="perMachine"
             Manufacturer="Rayan Rav"
-            Description="kb — Kanban in your terminal" />
+            Description="kb - Kanban in your terminal" />
 
         <MajorUpgrade
             DowngradeErrorMessage="A newer version of kb is already installed."
