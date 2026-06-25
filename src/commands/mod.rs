@@ -4,6 +4,7 @@ pub mod config;
 pub mod dashboard;
 pub mod data;
 pub mod del;
+pub mod edit;
 pub mod init;
 pub mod install;
 pub mod list;

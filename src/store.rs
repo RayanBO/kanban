@@ -127,14 +127,16 @@ fn generate_markdown(store: &Store) -> String {
     ] {
         out.push_str(header);
         out.push_str("\n\n");
-        out.push_str("| ID | Title | Priority | Assigned |\n");
-        out.push_str("|----|-------|----------|----------|\n");
+        out.push_str("| ID | Title | Priority | Due | Assigned |\n");
+        out.push_str("|----|-------|----------|-----|----------|\n");
         for task in store.tasks.iter().filter(|t| &t.status == status && !t.is_trash) {
+            let due = task.due_date.map_or("-".to_string(), |d| d.format("%Y-%m-%d").to_string());
             out.push_str(&format!(
-                "| `{}` | {} | {} | {} |\n",
+                "| `{}` | {} | {} | {} | {} |\n",
                 short_id(&task.id),
                 task.title,
                 task.priority,
+                due,
                 resolve_users(store, &task.assigned_to)
             ));
         }

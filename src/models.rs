@@ -70,6 +70,8 @@ pub struct Task {
     pub assigned_to: Vec<String>,
     pub created_at: DateTime<Utc>,
     #[serde(default)]
+    pub due_date: Option<DateTime<Utc>>,
+    #[serde(default)]
     pub is_trash: bool,
 }
 

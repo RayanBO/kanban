@@ -8,6 +8,12 @@ mod store;
 
 use models::{Priority, Status};
 
+fn parse_date(s: &str) -> Result<chrono::DateTime<chrono::Utc>, String> {
+    let d = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+        .map_err(|_| format!("Date invalide: {s}. Utilise YYYY-MM-DD."))?;
+    Ok(d.and_hms_opt(0, 0, 0).unwrap().and_utc())
+}
+
 #[derive(Parser)]
 #[command(name = "kb", about = "Kanban CLI", version)]
 struct Cli {
@@ -32,6 +38,8 @@ enum Command {
         priority: String,
         #[arg(long = "to", value_delimiter = ',')]
         assigned_to: Vec<String>,
+        #[arg(long)]
+        due: Option<String>,
     },
 
     /// Assigner des utilisateurs à une tâche existante
@@ -56,6 +64,19 @@ enum Command {
         priority: Option<String>,
         #[arg(short = 's', long)]
         status: Option<String>,
+    },
+
+    /// Modifier le titre, la priorité ou la date d'échéance d'une tâche
+    Edit {
+        id: String,
+        #[arg(long)]
+        title: Option<String>,
+        #[arg(short = 'p', long)]
+        priority: Option<String>,
+        #[arg(long)]
+        due: Option<String>,
+        #[arg(long)]
+        clear_due: bool,
     },
 
     /// Changer le statut d'une tâche
@@ -144,13 +165,17 @@ fn main() {
             commands::init::run(use_trash, no_init_dashboard)
         }
 
-        Command::Add { title, priority, assigned_to } => {
+        Command::Add { title, priority, assigned_to, due } => {
             let p = priority.parse::<Priority>().unwrap_or_else(|e| {
                 eprintln!("Erreur: {e}");
                 std::process::exit(1);
             });
             let assigned_to: Vec<String> = assigned_to.into_iter().filter(|s| !s.is_empty()).collect();
-            commands::add::run(&title, p, assigned_to)
+            let due_date = due.as_deref().map(parse_date).transpose().unwrap_or_else(|e| {
+                eprintln!("Erreur: {e}");
+                std::process::exit(1);
+            });
+            commands::add::run(&title, p, assigned_to, due_date)
         }
 
         Command::Assign { task_id, assigned_to } => {
@@ -185,6 +210,24 @@ fn main() {
                 })
             });
             commands::list::run(p, st)
+        }
+
+        Command::Edit { id, title, priority, due, clear_due } => {
+            let p = priority.as_deref().map(|s| {
+                s.parse::<Priority>().unwrap_or_else(|e| {
+                    eprintln!("Erreur: {e}");
+                    std::process::exit(1);
+                })
+            });
+            let due_date = if clear_due {
+                Some(None)
+            } else {
+                due.as_deref().map(|s| parse_date(s).map(Some)).transpose().unwrap_or_else(|e| {
+                    eprintln!("Erreur: {e}");
+                    std::process::exit(1);
+                })
+            };
+            commands::edit::run(&id, title.as_deref(), p, due_date)
         }
 
         Command::Move { task_id, new_status } => {

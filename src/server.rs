@@ -1,9 +1,10 @@
 use std::net::TcpListener;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 use axum::{
     body::Body,
-    extract::Json,
+    extract::{Json, State},
     http::{Response, StatusCode},
     response::IntoResponse,
     routing::{get, post},
@@ -13,10 +14,22 @@ use serde::Deserialize;
 use serde_json::json;
 use tower::service_fn;
 
-use crate::commands::{assign, user};
 use crate::embed::DashboardAssets;
-use crate::models::{Priority, Status};
+use crate::models::{Config, Priority, Status, Store, User};
 use crate::store;
+
+struct AppState {
+    store: Mutex<Store>,
+    config: Mutex<Config>,
+}
+
+#[derive(Deserialize)]
+struct EditBody {
+    id: String,
+    title: Option<String>,
+    priority: Option<String>,
+    due_date: Option<String>,
+}
 
 #[derive(Deserialize)]
 struct MoveBody {
@@ -29,6 +42,7 @@ struct AddBody {
     title: String,
     priority: Option<String>,
     assigned_to: Option<Vec<String>>,
+    due_date: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -55,22 +69,52 @@ struct AssignBody {
     assigned_to: Option<Vec<String>>,
 }
 
-async fn api_data() -> impl IntoResponse {
-    match store::load() {
-        Ok(data) => Json(data).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    }
+async fn api_data(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let store = state.store.lock().unwrap();
+    Json(&*store).into_response()
 }
 
-async fn api_move(Json(body): Json<MoveBody>) -> impl IntoResponse {
+async fn api_task_update(State(state): State<Arc<AppState>>, Json(body): Json<EditBody>) -> impl IntoResponse {
+    if body.title.is_none() && body.priority.is_none() && body.due_date.is_none() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "Spécifie au moins title, priority ou due_date."}))).into_response();
+    }
+    let mut s = state.store.lock().unwrap();
+    let task = match s.tasks.iter_mut().find(|t| t.id == body.id) {
+        Some(t) => t,
+        None => return (StatusCode::NOT_FOUND, Json(json!({"error": "Tâche introuvable"}))).into_response(),
+    };
+    if let Some(title) = body.title {
+        task.title = title;
+    }
+    if let Some(priority) = body.priority {
+        let p = match priority.parse::<Priority>() {
+            Ok(p) => p,
+            Err(e) => return (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response(),
+        };
+        task.priority = p;
+    }
+    if let Some(due) = body.due_date {
+        task.due_date = if due.is_empty() {
+            None
+        } else {
+            match parse_date(&due) {
+                Ok(d) => Some(d),
+                Err(e) => return (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response(),
+            }
+        };
+    }
+    if let Err(e) = store::save(&s) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
+    }
+    Json(json!({"ok": true})).into_response()
+}
+
+async fn api_move(State(state): State<Arc<AppState>>, Json(body): Json<MoveBody>) -> impl IntoResponse {
     let new_status = match body.status.parse::<Status>() {
         Ok(s) => s,
         Err(e) => return (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response(),
     };
-    let mut s = match store::load() {
-        Ok(s) => s,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    };
+    let mut s = state.store.lock().unwrap();
     let task = match s.tasks.iter_mut().find(|t| t.id == body.id) {
         Some(t) => t,
         None => return (StatusCode::NOT_FOUND, Json(json!({"error": "Tâche introuvable"}))).into_response(),
@@ -82,23 +126,24 @@ async fn api_move(Json(body): Json<MoveBody>) -> impl IntoResponse {
     Json(json!({"ok": true})).into_response()
 }
 
-async fn api_add(Json(body): Json<AddBody>) -> impl IntoResponse {
+async fn api_add(State(state): State<Arc<AppState>>, Json(body): Json<AddBody>) -> impl IntoResponse {
     let priority = body.priority.as_deref().unwrap_or("medium");
     let priority = match priority.parse::<Priority>() {
         Ok(p) => p,
         Err(e) => return (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response(),
     };
     let assigned_to = body.assigned_to.unwrap_or_default();
-    let mut s = match store::load() {
-        Ok(s) => s,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    };
+    let mut s = state.store.lock().unwrap();
     let known_ids: Vec<&str> = s.users.iter().map(|u| u.id.as_str()).collect();
     for uid in &assigned_to {
         if !known_ids.contains(&uid.as_str()) {
             return (StatusCode::BAD_REQUEST, Json(json!({"error": format!("Utilisateur inconnu: {uid}")}))).into_response();
         }
     }
+    let due_date = match body.due_date.as_deref().map(parse_date).transpose() {
+        Ok(d) => d,
+        Err(e) => return (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response(),
+    };
     let id = uuid::Uuid::new_v4().to_string();
     let task = crate::models::Task {
         id: id.clone(),
@@ -107,6 +152,7 @@ async fn api_add(Json(body): Json<AddBody>) -> impl IntoResponse {
         status: Status::Todo,
         assigned_to,
         created_at: chrono::Utc::now(),
+        due_date,
         is_trash: false,
     };
     s.tasks.push(task);
@@ -116,78 +162,91 @@ async fn api_add(Json(body): Json<AddBody>) -> impl IntoResponse {
     Json(json!({"id": id})).into_response()
 }
 
-async fn api_users() -> impl IntoResponse {
-    match user::list_users() {
-        Ok(users) => Json(users).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    }
+async fn api_users(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let store = state.store.lock().unwrap();
+    Json(&store.users).into_response()
 }
 
-async fn api_user_add(Json(body): Json<UserCreateBody>) -> impl IntoResponse {
+async fn api_user_add(State(state): State<Arc<AppState>>, Json(body): Json<UserCreateBody>) -> impl IntoResponse {
     if body.username.trim().is_empty() {
         return (StatusCode::BAD_REQUEST, Json(json!({"error": "username requis"}))).into_response();
     }
-    match user::create_user(body.username.trim(), body.pic.as_deref()) {
-        Ok(id) => Json(json!({"id": id})).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
+    let mut s = state.store.lock().unwrap();
+    let id = uuid::Uuid::new_v4().to_string();
+    s.users.push(User {
+        id: id.clone(),
+        username: body.username.trim().to_string(),
+        pic: body.pic.map(|s| s.to_string()),
+        created_at: chrono::Utc::now(),
+    });
+    if let Err(e) = store::save(&s) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
     }
+    Json(json!({"id": id})).into_response()
 }
 
-async fn api_user_update(Json(body): Json<UserUpdateBody>) -> impl IntoResponse {
+async fn api_user_update(State(state): State<Arc<AppState>>, Json(body): Json<UserUpdateBody>) -> impl IntoResponse {
     if body.username.as_deref().is_some_and(|v| v.trim().is_empty()) {
         return (StatusCode::BAD_REQUEST, Json(json!({"error": "username vide"}))).into_response();
     }
-    match user::update_user(
-        &body.id,
-        body.username.as_deref().map(str::trim).filter(|s| !s.is_empty()),
-        body.pic.as_deref(),
-    ) {
-        Ok(_) => Json(json!({"ok": true})).into_response(),
-        Err(e) => {
-            if e.starts_with("User ID inconnu:") || e.starts_with("Spécifie") {
-                (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response()
-            } else {
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response()
-            }
-        }
-    }
-}
-
-async fn api_user_delete(Json(body): Json<IdBody>) -> impl IntoResponse {
-    match user::delete_user(&body.id) {
-        Ok(_) => Json(json!({"ok": true})).into_response(),
-        Err(e) => {
-            if e.starts_with("User ID inconnu:") {
-                (StatusCode::NOT_FOUND, Json(json!({"error": e}))).into_response()
-            } else {
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response()
-            }
-        }
-    }
-}
-
-async fn api_task_assign(Json(body): Json<AssignBody>) -> impl IntoResponse {
-    match assign::set_assignment(&body.task_id, body.assigned_to.unwrap_or_default()) {
-        Ok(_) => Json(json!({"ok": true})).into_response(),
-        Err(e) => {
-            if e.starts_with("Task ID inconnu:") || e.starts_with("User ID inconnu:") {
-                (StatusCode::BAD_REQUEST, Json(json!({"error": e}))).into_response()
-            } else {
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response()
-            }
-        }
-    }
-}
-
-async fn api_del(Json(body): Json<IdBody>) -> impl IntoResponse {
-    let mut s = match store::load() {
-        Ok(s) => s,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
+    let mut s = state.store.lock().unwrap();
+    let user = match s.users.iter_mut().find(|u| u.id == body.id) {
+        Some(u) => u,
+        None => return (StatusCode::NOT_FOUND, Json(json!({"error": format!("User ID inconnu: {}", body.id)}))).into_response(),
     };
-    let config = match store::load_config() {
-        Ok(c) => c,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
+    if body.username.is_none() && body.pic.is_none() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "Spécifie au moins --username ou --pic."}))).into_response();
+    }
+    if let Some(name) = body.username.as_deref() {
+        user.username = name.trim().to_string();
+    }
+    if let Some(path) = body.pic {
+        user.pic = Some(path);
+    }
+    if let Err(e) = store::save(&s) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
+    }
+    Json(json!({"ok": true})).into_response()
+}
+
+async fn api_user_delete(State(state): State<Arc<AppState>>, Json(body): Json<IdBody>) -> impl IntoResponse {
+    let mut s = state.store.lock().unwrap();
+    if !s.users.iter().any(|u| u.id == body.id) {
+        return (StatusCode::NOT_FOUND, Json(json!({"error": format!("User ID inconnu: {}", body.id)}))).into_response();
+    }
+    s.users.retain(|u| u.id != body.id);
+    for task in s.tasks.iter_mut() {
+        task.assigned_to.retain(|uid| uid != body.id);
+    }
+    if let Err(e) = store::save(&s) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
+    }
+    Json(json!({"ok": true})).into_response()
+}
+
+async fn api_task_assign(State(state): State<Arc<AppState>>, Json(body): Json<AssignBody>) -> impl IntoResponse {
+    let mut s = state.store.lock().unwrap();
+    let known_ids: Vec<&str> = s.users.iter().map(|u| u.id.as_str()).collect();
+    let assigned_to = body.assigned_to.unwrap_or_default();
+    for uid in &assigned_to {
+        if !known_ids.contains(&uid.as_str()) {
+            return (StatusCode::BAD_REQUEST, Json(json!({"error": format!("User ID inconnu: {uid}")}))).into_response();
+        }
+    }
+    let task = match s.tasks.iter_mut().find(|t| t.id == body.task_id) {
+        Some(t) => t,
+        None => return (StatusCode::BAD_REQUEST, Json(json!({"error": format!("Task ID inconnu: {}", body.task_id)}))).into_response(),
     };
+    task.assigned_to = assigned_to;
+    if let Err(e) = store::save(&s) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
+    }
+    Json(json!({"ok": true})).into_response()
+}
+
+async fn api_del(State(state): State<Arc<AppState>>, Json(body): Json<IdBody>) -> impl IntoResponse {
+    let mut s = state.store.lock().unwrap();
+    let config = state.config.lock().unwrap();
     let task = match s.tasks.iter_mut().find(|t| t.id == body.id) {
         Some(t) => t,
         None => return (StatusCode::NOT_FOUND, Json(json!({"error": "Tâche introuvable"}))).into_response(),
@@ -200,6 +259,7 @@ async fn api_del(Json(body): Json<IdBody>) -> impl IntoResponse {
     } else {
         s.tasks.retain(|t| t.id != body.id);
     }
+    drop(config);
     if let Err(e) = store::save(&s) {
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
     }
@@ -216,12 +276,14 @@ async fn api_folder() -> impl IntoResponse {
     Json(json!({"folder": folder}))
 }
 
-async fn api_init() -> impl IntoResponse {
+async fn api_init(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     if store::is_initialized() {
         return (StatusCode::BAD_REQUEST, Json(json!({"error": "Déjà initialisé"}))).into_response();
     }
-    let config = crate::models::Config::default();
-    let s = crate::models::Store::default();
+    let mut s = state.store.lock().unwrap();
+    *s = Store::default();
+    let mut config = state.config.lock().unwrap();
+    *config = Config::default();
     if let Err(e) = store::save(&s) {
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
     }
@@ -231,11 +293,8 @@ async fn api_init() -> impl IntoResponse {
     Json(json!({"ok": true})).into_response()
 }
 
-async fn api_trash_restore(Json(body): Json<IdBody>) -> impl IntoResponse {
-    let mut s = match store::load() {
-        Ok(s) => s,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    };
+async fn api_trash_restore(State(state): State<Arc<AppState>>, Json(body): Json<IdBody>) -> impl IntoResponse {
+    let mut s = state.store.lock().unwrap();
     let task = match s.tasks.iter_mut().find(|t| t.id == body.id && t.is_trash) {
         Some(t) => t,
         None => return (StatusCode::NOT_FOUND, Json(json!({"error": "Tâche introuvable dans la corbeille"}))).into_response(),
@@ -247,11 +306,8 @@ async fn api_trash_restore(Json(body): Json<IdBody>) -> impl IntoResponse {
     Json(json!({"ok": true})).into_response()
 }
 
-async fn api_trash_clean() -> impl IntoResponse {
-    let mut s = match store::load() {
-        Ok(s) => s,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    };
+async fn api_trash_clean(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let mut s = state.store.lock().unwrap();
     s.tasks.retain(|t| !t.is_trash);
     if let Err(e) = store::save(&s) {
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response();
@@ -259,11 +315,9 @@ async fn api_trash_clean() -> impl IntoResponse {
     Json(json!({"ok": true})).into_response()
 }
 
-async fn api_config() -> impl IntoResponse {
-    match store::load_config() {
-        Ok(config) => Json(config).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    }
+async fn api_config(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let config = state.config.lock().unwrap();
+    Json(&*config).into_response()
 }
 
 #[derive(Deserialize)]
@@ -272,11 +326,8 @@ struct ConfigUpdateBody {
     use_trash: Option<bool>,
 }
 
-async fn api_config_update(Json(body): Json<ConfigUpdateBody>) -> impl IntoResponse {
-    let mut config = match store::load_config() {
-        Ok(c) => c,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e}))).into_response(),
-    };
+async fn api_config_update(State(state): State<Arc<AppState>>, Json(body): Json<ConfigUpdateBody>) -> impl IntoResponse {
+    let mut config = state.config.lock().unwrap();
     if let Some(theme) = body.theme_dashboard {
         if theme != "dark" && theme != "light" {
             return (StatusCode::BAD_REQUEST, Json(json!({"error": "theme invalide"}))).into_response();
@@ -306,10 +357,19 @@ pub fn find_port(start: u16) -> u16 {
 }
 
 pub async fn run_server(port: u16) -> Result<(), String> {
+    let store_data = store::load().unwrap_or_default();
+    let config_data = store::load_config().unwrap_or_default();
+
+    let state = Arc::new(AppState {
+        store: Mutex::new(store_data),
+        config: Mutex::new(config_data),
+    });
+
     let api = Router::new()
         .route("/data", get(api_data))
         .route("/move", post(api_move))
         .route("/add", post(api_add))
+        .route("/task-update", post(api_task_update))
         .route("/del", post(api_del))
         .route("/users", get(api_users).post(api_user_add).put(api_user_update).delete(api_user_delete))
         .route("/task-assign", post(api_task_assign))
@@ -317,7 +377,8 @@ pub async fn run_server(port: u16) -> Result<(), String> {
         .route("/init", post(api_init))
         .route("/trash-restore", post(api_trash_restore))
         .route("/trash-clean", post(api_trash_clean))
-        .route("/config", get(api_config).post(api_config_update));
+        .route("/config", get(api_config).post(api_config_update))
+        .with_state(state.clone());
 
     let app = Router::new()
         .nest("/api", api)
@@ -362,6 +423,12 @@ pub async fn run_server(port: u16) -> Result<(), String> {
     axum::serve(listener, app)
         .await
         .map_err(|e| format!("Serveur: {e}"))
+}
+
+fn parse_date(s: &str) -> Result<chrono::DateTime<chrono::Utc>, String> {
+    let d = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+        .map_err(|_| format!("Date invalide: {s}. Utilise YYYY-MM-DD."))?;
+    Ok(d.and_hms_opt(0, 0, 0).unwrap().and_utc())
 }
 
 fn guess_ct(path: &str) -> &'static str {

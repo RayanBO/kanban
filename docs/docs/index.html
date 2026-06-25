@@ -280,15 +280,17 @@
 </head>
 <body>
   <header>
-    <a href="../" class="logo"><span>~</span>/kb</a>
-    <nav class="header-links" aria-label="Main navigation">
-      <a href="../">Home</a>
-      <a href="./" class="active">Docs</a>
-      <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener" class="btn-outline">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>
-        <span>GitHub</span>
-      </a>
-    </nav>
+    <div class="header-inner">
+      <a href="../" class="logo"><span>~</span>/kb</a>
+      <nav class="header-links" aria-label="Main navigation">
+        <a href="../">Home</a>
+        <a href="./" class="active">Docs</a>
+        <a href="https://github.com/rayanbo/kanban" target="_blank" rel="noopener" class="btn-outline">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>
+          <span>GitHub</span>
+        </a>
+      </nav>
+    </div>
   </header>
 
   <main>
@@ -299,6 +301,7 @@
           <a href="#init">init</a>
           <a href="#install">install</a>
           <a href="#add">add</a>
+          <a href="#edit">edit</a>
           <a href="#list">list</a>
           <a href="#move">move</a>
           <a href="#assign">assign</a>
@@ -357,18 +360,46 @@
         <div class="cmd-block">
           <div class="cmd-name">add</div>
           <div class="cmd-desc">Create a new task with status <span class="mono">todo</span>. Assign users and set priority.</div>
-          <div class="cmd-syntax">kb add &lt;title&gt; [-p &lt;priority&gt;] [--to &lt;users&gt;]</div>
+          <div class="cmd-syntax">kb add &lt;title&gt; [-p &lt;priority&gt;] [--to &lt;users&gt;] [--due &lt;date&gt;]</div>
           <table class="cmd-flags">
             <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
             <tr><td>title</td><td>yes</td><td>Task title (positional). Wrap in quotes for multi-word titles.</td></tr>
             <tr><td>-p, --priority</td><td>no</td><td>Priority: <span class="mono">low</span>, <span class="mono">medium</span> (default), or <span class="mono">high</span>.</td></tr>
             <tr><td>--to</td><td>no</td><td>Comma-separated user IDs to assign.</td></tr>
+            <tr><td>--due</td><td>no</td><td>Due date in <span class="mono">YYYY-MM-DD</span> format.</td></tr>
           </table>
           <span class="cmd-example"><span class="comment"># Simple task</span></span>
           <span class="cmd-example"><span class="prompt">$</span> kb add "Implement login"</span>
-          <span class="cmd-example"><span class="comment"># High priority task assigned to users</span></span>
-          <span class="cmd-example"><span class="prompt">$</span> kb add "Fix memory leak" -p high --to "uid1,uid2"</span>
+          <span class="cmd-example"><span class="comment"># High priority task with due date</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb add "Fix memory leak" -p high --due 2025-12-31 --to "uid1,uid2"</span>
           <span class="cmd-example"><span class="comment"># &#8594; Task created with ID a1b2c3d4</span></span>
+          <a href="#" class="top-link">&#8593; Top</a>
+        </div>
+      </div>
+
+      <!-- edit -->
+      <div class="cmd-group" id="edit">
+        <h2>kb edit</h2>
+        <div class="cmd-block">
+          <div class="cmd-name">edit</div>
+          <div class="cmd-desc">Update a task's title, priority, or due date without moving or recreating it.</div>
+          <div class="cmd-syntax">kb edit &lt;id&gt; [--title &lt;text&gt;] [-p &lt;priority&gt;] [--due &lt;date&gt;] [--clear-due]</div>
+          <table class="cmd-flags">
+            <tr><th>Arg</th><th>Required</th><th>Description</th></tr>
+            <tr><td>id</td><td>yes</td><td>UUID of the task to edit.</td></tr>
+            <tr><td>--title</td><td>no</td><td>New title for the task.</td></tr>
+            <tr><td>-p, --priority</td><td>no</td><td>New priority: <span class="mono">low</span>, <span class="mono">medium</span>, or <span class="mono">high</span>.</td></tr>
+            <tr><td>--due</td><td>no</td><td>Set due date in <span class="mono">YYYY-MM-DD</span> format.</td></tr>
+            <tr><td>--clear-due</td><td>no</td><td>Remove the due date.</td></tr>
+          </table>
+          <span class="cmd-example"><span class="comment"># Change title only</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb edit a1b2c3d4 --title "Updated title"</span>
+          <span class="cmd-example"><span class="comment"># Change priority only</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb edit a1b2c3d4 -p high</span>
+          <span class="cmd-example"><span class="comment"># Set due date</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb edit a1b2c3d4 --due 2025-12-31</span>
+          <span class="cmd-example"><span class="comment"># Clear due date</span></span>
+          <span class="cmd-example"><span class="prompt">$</span> kb edit a1b2c3d4 --clear-due</span>
           <a href="#" class="top-link">&#8593; Top</a>
         </div>
       </div>
