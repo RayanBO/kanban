@@ -87,6 +87,7 @@ User { id, username, pic, color }
 - Large overlay modal for task detail view
 - Shows title (large, heading font), status badge, priority badge
 - Shows assigned users with avatar pills
+- Lets user edit task title, priority, and due date
 - Lets user reassign task via multi-select + save
 - Close via × button, overlay click, or Escape
 
@@ -138,7 +139,6 @@ User { id, username, pic, color }
 
 ## To Do
 - [ ] `prefers-reduced-motion` support
-- [ ] Édition complète de tâche
 - [ ] Filtres / recherche avancés
 - [ ] Reordering dans une colonne
 - [ ] Animations entrée/sortie cartes

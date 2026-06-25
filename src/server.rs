@@ -357,8 +357,20 @@ pub fn find_port(start: u16) -> u16 {
 }
 
 pub async fn run_server(port: u16) -> Result<(), String> {
-    let store_data = store::load().unwrap_or_default();
-    let config_data = store::load_config().unwrap_or_default();
+    let store_data = match store::load() {
+        Ok(store) => store,
+        Err(e) => {
+            eprintln!("Avertissement: impossible de charger kanban.md: {e}");
+            Store::default()
+        }
+    };
+    let config_data = match store::load_config() {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("Avertissement: impossible de charger kb-config.yaml: {e}");
+            Config::default()
+        }
+    };
 
     let state = Arc::new(AppState {
         store: Mutex::new(store_data),

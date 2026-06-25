@@ -48,7 +48,9 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                         >
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+                            <path
+                                d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
+                            />
                             <circle cx="9" cy="7" r="4" />
                             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
@@ -152,7 +154,7 @@
                     </button>
                     <a
                         class="footer-credit"
-                        href="https://github.com/RayanBO"
+                        href="https://github.com/RayanBO/kanban.git"
                         target="_blank"
                         rel="noopener"
                     >
@@ -226,7 +228,11 @@
         </div>
 
         <div class="modal-overlay" id="usersModal">
-            <div class="modal users-modal" role="dialog" aria-label="Manage users">
+            <div
+                class="modal users-modal"
+                role="dialog"
+                aria-label="Manage users"
+            >
                 <div class="modal-header">
                     <h2>Users</h2>
                     <button
@@ -262,6 +268,58 @@
                         </div>
                     </div>
                     <div id="userManagerList" class="user-manager-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="editModal">
+            <div
+                class="modal task-edit-modal"
+                role="dialog"
+                aria-label="Edit task"
+            >
+                <div class="modal-header">
+                    <h2>Modifier la tache</h2>
+                    <button
+                        class="btn-close"
+                        id="editModalClose"
+                        aria-label="Close"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="task-edit-grid">
+                        <div class="form-group">
+                            <label for="editTaskTitle">Title</label>
+                            <input
+                                type="text"
+                                id="editTaskTitle"
+                                placeholder="Task title"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="editTaskPriority">Priority</label>
+                            <select id="editTaskPriority">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="form-group task-edit-due">
+                            <label for="editTaskDue">Due date</label>
+                            <input type="date" id="editTaskDue" />
+                        </div>
+                    </div>
+                    <div class="hero-help">
+                        Leave due date empty to clear it.
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn" id="editModalCancel">Cancel</button>
+                        <button class="btn btn-primary" id="editModalSave">
+                            Save
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -311,11 +369,7 @@
         </div>
 
         <div class="hero-overlay" id="heroOverlay">
-            <div
-                class="hero-modal"
-                role="dialog"
-                aria-label="Task details"
-            >
+            <div class="hero-modal" role="dialog" aria-label="Task details">
                 <div class="hero-cover" id="heroCover"></div>
                 <div class="hero-body" id="heroBody"></div>
             </div>
@@ -340,6 +394,7 @@
             let USERS = [];
             let useTrash = true;
             let currentHeroTaskId = null;
+            let editingTaskId = null;
 
             async function apiJson(path, opts) {
                 const r = await fetch(path, opts);
@@ -354,6 +409,7 @@
                     priority: t.priority,
                     status: t.status,
                     assigned: t.assigned_to || [],
+                    due_date: t.due_date || null,
                 };
             }
 
@@ -598,7 +654,10 @@
 
             document.querySelectorAll(".modal-overlay").forEach((overlay) => {
                 overlay.addEventListener("click", (e) => {
-                    if (e.target === overlay) overlay.classList.remove("open");
+                    if (e.target === overlay) {
+                        overlay.classList.remove("open");
+                        if (overlay.id === "editModal") editingTaskId = null;
+                    }
                 });
             });
 
@@ -609,6 +668,8 @@
                             ".modal-overlay.open, .hero-overlay.open",
                         )
                         .forEach((el) => el.classList.remove("open"));
+                    currentHeroTaskId = null;
+                    editingTaskId = null;
                 }
             });
 
@@ -620,12 +681,14 @@
                     updateAssignOptions();
                     openModal("addModal");
                 });
-            document.getElementById("usersBtn").addEventListener("click", () => {
-                document.getElementById("newUserName").value = "";
-                document.getElementById("newUserPic").value = "";
-                renderUserManager();
-                openModal("usersModal");
-            });
+            document
+                .getElementById("usersBtn")
+                .addEventListener("click", () => {
+                    document.getElementById("newUserName").value = "";
+                    document.getElementById("newUserPic").value = "";
+                    renderUserManager();
+                    openModal("usersModal");
+                });
             document
                 .getElementById("addModalClose")
                 .addEventListener("click", () => closeModal("addModal"));
@@ -656,6 +719,18 @@
             document
                 .getElementById("usersModalClose")
                 .addEventListener("click", () => closeModal("usersModal"));
+            document
+                .getElementById("editModalClose")
+                .addEventListener("click", () => closeEditModal());
+            document
+                .getElementById("editModalCancel")
+                .addEventListener("click", () => closeEditModal());
+            document
+                .getElementById("editModalSave")
+                .addEventListener("click", async () => {
+                    if (!editingTaskId) return;
+                    await saveTaskUpdate(editingTaskId);
+                });
             document
                 .getElementById("createUserBtn")
                 .addEventListener("click", async () => {
@@ -701,12 +776,10 @@
                 );
                 if (useTrash) {
                     row.textContent = "Trash enabled";
-                    desc.textContent =
-                        "Deleted tasks go to trash";
+                    desc.textContent = "Deleted tasks go to trash";
                 } else {
                     row.textContent = "Trash disabled";
-                    desc.textContent =
-                        "Deleted tasks are permanently removed";
+                    desc.textContent = "Deleted tasks are permanently removed";
                 }
             }
 
@@ -765,8 +838,12 @@
 
             async function saveUserFromRow(row) {
                 const id = row.dataset.userId;
-                const username = row.querySelector('[data-field="username"]').value.trim();
-                const pic = row.querySelector('[data-field="pic"]').value.trim();
+                const username = row
+                    .querySelector('[data-field="username"]')
+                    .value.trim();
+                const pic = row
+                    .querySelector('[data-field="pic"]')
+                    .value.trim();
                 if (!username) return;
                 await apiJson("/api/users", {
                     method: "PUT",
@@ -804,13 +881,60 @@
                 await loadData();
             }
 
+            async function saveTaskUpdate(taskId) {
+                const title = document
+                    .getElementById("editTaskTitle")
+                    .value.trim();
+                const priority =
+                    document.getElementById("editTaskPriority").value;
+                const due = document.getElementById("editTaskDue").value.trim();
+
+                if (!title) return;
+
+                await apiJson("/api/task-update", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: taskId,
+                        title,
+                        priority,
+                        due_date: due,
+                    }),
+                });
+                const heroOpen = document
+                    .getElementById("heroOverlay")
+                    .classList.contains("open");
+                closeEditModal();
+                await loadData();
+                if (heroOpen && taskId) openHero(taskId);
+            }
+
+            function openEditModal(taskId) {
+                const task = TASKS.find((item) => item.id === taskId);
+                if (!task) return;
+
+                editingTaskId = taskId;
+                document.getElementById("editTaskTitle").value = task.title;
+                document.getElementById("editTaskPriority").value =
+                    task.priority;
+                document.getElementById("editTaskDue").value = task.due_date
+                    ? task.due_date.slice(0, 10)
+                    : "";
+                openModal("editModal");
+                document.getElementById("editTaskTitle").focus();
+            }
+
+            function closeEditModal() {
+                editingTaskId = null;
+                closeModal("editModal");
+            }
+
             function renderUserManager() {
                 const list = document.getElementById("userManagerList");
                 if (!list) return;
 
                 if (!USERS.length) {
-                    list.innerHTML =
-                        '<div class="user-empty">No users.</div>';
+                    list.innerHTML = '<div class="user-empty">No users.</div>';
                     return;
                 }
 
@@ -846,20 +970,22 @@
                     });
                 });
 
-                list.querySelectorAll("[data-action='delete']").forEach((btn) => {
-                    btn.addEventListener("click", async () => {
-                        const row = btn.closest(".user-row");
-                        if (!row) return;
-                        if (
-                            !window.confirm(
-                                "Delete this user? Their assignments will be removed from tasks.",
-                            )
-                        ) {
-                            return;
-                        }
-                        await deleteUserById(row.dataset.userId);
-                    });
-                });
+                list.querySelectorAll("[data-action='delete']").forEach(
+                    (btn) => {
+                        btn.addEventListener("click", async () => {
+                            const row = btn.closest(".user-row");
+                            if (!row) return;
+                            if (
+                                !window.confirm(
+                                    "Delete this user? Their assignments will be removed from tasks.",
+                                )
+                            ) {
+                                return;
+                            }
+                            await deleteUserById(row.dataset.userId);
+                        });
+                    },
+                );
             }
 
             function applyTheme(theme) {
@@ -1172,6 +1298,17 @@
                 document.getElementById("heroCover").innerHTML = `
     <div class="hero-cover-top">
       <h3 class="hero-title">${esc(task.title)}</h3>
+      <button
+        class="btn btn-sm btn-ghost hero-edit-btn"
+        id="heroOpenEdit"
+        aria-label="Modifier la tache"
+        title="Modifier"
+      >
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M12.9 3.1a1.8 1.8 0 0 1 2.6 0l1.4 1.4a1.8 1.8 0 0 1 0 2.6l-8.9 8.9L4 16l.8-4z" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11.5 4.5l4 4" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
     <div class="hero-badges">
       <span class="hero-badge hero-badge-status" data-status="${task.status}">${statusIcon}${statusLabel}</span>
@@ -1221,9 +1358,15 @@
                     task.assigned,
                 );
                 document
+                    .getElementById("heroOpenEdit")
+                    .addEventListener("click", () => {
+                        openEditModal(currentHeroTaskId);
+                    });
+                document
                     .getElementById("heroAssignSave")
                     .addEventListener("click", async () => {
-                        const select = document.getElementById("heroTaskAssign");
+                        const select =
+                            document.getElementById("heroTaskAssign");
                         await saveTaskAssignment(currentHeroTaskId, select);
                     });
 
@@ -1255,7 +1398,9 @@
                 return d.innerHTML;
             }
 
-            loadData().catch((err) => console.error("Dashboard load failed:", err));
+            loadData().catch((err) =>
+                console.error("Dashboard load failed:", err),
+            );
         </script>
     </body>
 </html>

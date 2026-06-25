@@ -54,7 +54,7 @@ pub fn load() -> Result<Store, String> {
     let content = fs::read_to_string(kanban_path())
         .map_err(|e| format!("Lecture kanban.md échouée: {e}"))?;
     let yaml = extract_frontmatter(&content)?;
-    serde_yaml::from_str(yaml)
+    serde_yaml::from_str(&yaml)
         .map_err(|e| format!("Parse YAML échoué: {e}"))
 }
 
@@ -68,18 +68,15 @@ pub fn save(store: &Store) -> Result<(), String> {
         .map_err(|e| format!("Écriture kanban.md échouée: {e}"))
 }
 
-fn extract_frontmatter(content: &str) -> Result<&str, String> {
-    let after_first = content
+fn extract_frontmatter(content: &str) -> Result<String, String> {
+    let normalized = content.strip_prefix('\u{feff}').unwrap_or(content).replace("\r\n", "\n");
+    let after_first = normalized
         .strip_prefix("---\n")
         .ok_or("kanban.md: frontmatter YAML manquant (doit commencer par ---)")?;
     let end = after_first
         .find("\n---\n")
         .ok_or("kanban.md: frontmatter non fermé")?;
-    Ok(&after_first[..end + 1])
-}
-
-fn short_id(id: &str) -> &str {
-    &id[..8.min(id.len())]
+    Ok(after_first[..end + 1].to_string())
 }
 
 fn resolve_users(store: &Store, ids: &[String]) -> String {
@@ -111,7 +108,7 @@ fn generate_markdown(store: &Store) -> String {
         let pic = user.pic.as_deref().unwrap_or("-");
         out.push_str(&format!(
             "| `{}` | {} | {} |\n",
-            short_id(&user.id),
+            user.id,
             user.username,
             pic
         ));
@@ -133,7 +130,7 @@ fn generate_markdown(store: &Store) -> String {
             let due = task.due_date.map_or("-".to_string(), |d| d.format("%Y-%m-%d").to_string());
             out.push_str(&format!(
                 "| `{}` | {} | {} | {} | {} |\n",
-                short_id(&task.id),
+                task.id,
                 task.title,
                 task.priority,
                 due,
