@@ -67,6 +67,7 @@ kb data (legacy alias for `kb export --json`)
 - User manager modal (create, edit, delete)
 - Task detail view with inline assignment editing
 - Task edit modal for title, priority, tags, and due date
+- Comments on tasks with Markdown content and delete
 - Trash drawer with restore and clean-all
 - Search by title, user, status, priority, and tags
 - Export buttons for JSON and Markdown backups, plus browser download
