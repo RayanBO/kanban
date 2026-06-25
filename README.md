@@ -1,5 +1,7 @@
 # kb — Kanban CLI
 
+[![Ko-Fi](https://img.shields.io/badge/Ko--fi-Support%20kb-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/rayanrav)
+
 **kb** is a portable Kanban board that lives in your terminal. Built with Rust, it ships as a single binary — no dependencies, no database, no cloud. When you need visuals, `kb dashboard` starts an embedded web server with a drag-and-drop board, task tags, and live reload support.
 
 🌐 Landing page: [https://rayanbo.github.io/kanban/](https://rayanbo.github.io/kanban/)
