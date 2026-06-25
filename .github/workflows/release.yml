@@ -1,6 +1,6 @@
 name: Release
 
-# Se déclenche uniquement quand tu pushe un tag comme v1.2.5
+# Se déclenche uniquement quand tu pushe un tag comme v1.3.0
 on:
   push:
     tags:
