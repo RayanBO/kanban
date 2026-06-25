@@ -16,8 +16,6 @@ kb-linux-x64
 kb-macos-arm64
 kb-macos-x64
 
-.kanban/
-
 # Editors
 .vscode/
 .idea/
